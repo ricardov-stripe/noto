@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
+import { api } from './api';
 import type { Note, Task, Folder, CalendarEvent, FreeSlot } from './api';
 import { Sidebar } from './components/Sidebar';
 import { NoteEditor } from './components/NoteEditor';
@@ -29,11 +30,10 @@ export default function App() {
 
   // Load initial data
   useEffect(() => {
-    if (!window.actionflow) return;
     Promise.all([
-      window.actionflow.notes.list(),
-      window.actionflow.tasks.list(),
-      window.actionflow.folders.list(),
+      api.notes.list(),
+      api.tasks.list(),
+      api.folders.list(),
     ]).then(([n, t, f]) => {
       setNotes(n);
       setTasks(t);
@@ -44,8 +44,7 @@ export default function App() {
 
   // Load API key
   useEffect(() => {
-    if (!window.actionflow) return;
-    window.actionflow.config.getApiKey().then((key) => {
+    api.config.getApiKey().then((key) => {
       if (key) setApiKey(key);
       setApiKeyLoaded(true);
     }).catch(() => setApiKeyLoaded(true));
@@ -53,50 +52,43 @@ export default function App() {
 
   // Load calendar events
   useEffect(() => {
-    if (!window.actionflow) return;
-    window.actionflow.calendar.events(7).then((events) => {
+    api.calendar.events(7).then((events) => {
       setCalendarEvents(events);
     });
   }, []);
 
   // Update free slots when date changes
   useEffect(() => {
-    if (!window.actionflow) return;
-    window.actionflow.calendar.freeSlots(selectedDate, 9, 17).then((slots) => {
+    api.calendar.freeSlots(selectedDate, 9, 17).then((slots) => {
       setFreeSlots(slots);
     });
   }, [selectedDate]);
 
   const refreshNotes = useCallback(async () => {
-    if (!window.actionflow) return;
-    const n = await window.actionflow.notes.list();
+    const n = await api.notes.list();
     setNotes(n);
   }, []);
 
   const refreshTasks = useCallback(async () => {
-    if (!window.actionflow) return;
-    const t = await window.actionflow.tasks.list();
+    const t = await api.tasks.list();
     setTasks(t);
   }, []);
 
   const handleCreateNote = useCallback(async () => {
-    if (!window.actionflow) return;
-    const note = await window.actionflow.notes.create({ title: 'Untitled', content: '', folderId: null });
+    const note = await api.notes.create({ title: 'Untitled', content: '', folderId: null });
     await refreshNotes();
     setActiveNoteId(note.id);
     setActiveView('notes');
   }, [refreshNotes]);
 
   const handleNoteChange = useCallback(async (html: string) => {
-    if (!window.actionflow || !activeNoteId) return;
+    if (!activeNoteId) return;
 
-    // Save to DB
-    await window.actionflow.notes.update(activeNoteId, { content: html });
+    await api.notes.update(activeNoteId, { content: html });
 
-    // Extract title from first line
     const titleMatch = html.match(/<[^>]*>([^<]+)/);
     const title = titleMatch?.[1]?.trim() || 'Untitled';
-    await window.actionflow.notes.update(activeNoteId, { title });
+    await api.notes.update(activeNoteId, { title });
     await refreshNotes();
 
     // Debounced AI extraction
@@ -106,7 +98,7 @@ export default function App() {
       setIsExtracting(true);
       try {
         const existingTitles = tasks.filter(t => t.sourceNoteId === activeNoteId).map(t => t.title);
-        const extracted = await window.actionflow.ai.extract(html, title, existingTitles);
+        const extracted = await api.ai.extract(html, title, existingTitles);
         setSuggestions(extracted);
       } catch {
         // Extraction failed silently
@@ -117,9 +109,9 @@ export default function App() {
   }, [activeNoteId, apiKey, tasks, refreshNotes]);
 
   const handleAcceptSuggestion = useCallback(async (index: number) => {
-    if (!window.actionflow || !activeNoteId) return;
+    if (!activeNoteId) return;
     const suggestion = suggestions[index];
-    await window.actionflow.tasks.create({
+    await api.tasks.create({
       title: suggestion.title,
       description: '',
       priority: suggestion.priority,
@@ -137,8 +129,7 @@ export default function App() {
   }, []);
 
   const handleUpdateTaskStatus = useCallback(async (id: number, status: Task['status']) => {
-    if (!window.actionflow) return;
-    await window.actionflow.tasks.update(id, { status });
+    await api.tasks.update(id, { status });
     await refreshTasks();
   }, [refreshTasks]);
 
@@ -147,7 +138,6 @@ export default function App() {
     setActiveView('notes');
   }, []);
 
-  // Render main content based on active view
   const renderContent = () => {
     switch (activeView) {
       case 'tasks':
@@ -173,8 +163,7 @@ export default function App() {
     }
   };
 
-  // Show setup screen if no API key (only in Electron where IPC is available)
-  if (apiKeyLoaded && !apiKey && window.actionflow) {
+  if (apiKeyLoaded && !apiKey) {
     return <SetupScreen onSave={(key) => setApiKey(key)} />;
   }
 

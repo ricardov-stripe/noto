@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { api } from '../api';
 
 interface SetupScreenProps {
   onSave: (apiKey: string) => void;
@@ -19,11 +20,7 @@ export function SetupScreen({ onSave }: SetupScreenProps) {
     setError('');
 
     try {
-      // Store the key via IPC and let the main app handle validation
-      if (window.actionflow) {
-        // @ts-expect-error config not in typed API yet
-        await window.actionflow.config.setApiKey(key.trim());
-      }
+      await api.config.setApiKey(key.trim());
       onSave(key.trim());
     } catch {
       setError('Failed to save API key');

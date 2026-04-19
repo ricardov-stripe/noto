@@ -1,14 +1,15 @@
 {
   "name": "noto",
   "version": "1.0.0",
-  "main": "index.js",
+  "main": "electron-dist/main.js",
   "scripts": {
     "dev": "vite",
     "build": "vite build",
+    "build:electron": "tsc electron/main.ts electron/preload.ts --outDir electron-dist --esModuleInterop --skipLibCheck --module Node16 --target ES2020 --moduleResolution Node16 --ignoreConfig",
     "test": "vitest run",
     "test:watch": "vitest",
-    "electron:dev": "vite & sleep 2 && electron .",
-    "electron:build": "vite build && electron-builder"
+    "electron:dev": "npm run build:electron && VITE_DEV_SERVER_URL=http://localhost:5173 electron .",
+    "electron:build": "npm run build:electron && vite build && electron-builder"
   },
   "keywords": [],
   "author": "",

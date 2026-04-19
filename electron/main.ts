@@ -1,6 +1,7 @@
 import { app, BrowserWindow, ipcMain } from 'electron';
 import path from 'path';
 import { Database } from './database';
+import { extractTasks } from './extraction';
 
 function createWindow() {
   const win = new BrowserWindow({
@@ -42,3 +43,14 @@ ipcMain.handle('tasks:delete', (_, id: number) => db.deleteTask(id));
 // Folders
 ipcMain.handle('folders:list', () => db.listFolders());
 ipcMain.handle('folders:create', (_, data) => db.createFolder(data));
+
+// AI Extraction
+let apiKey = '';
+
+ipcMain.handle('config:setApiKey', (_, key: string) => { apiKey = key; });
+ipcMain.handle('config:getApiKey', () => apiKey);
+
+ipcMain.handle('ai:extract', async (_, noteContent: string, noteTitle: string, existingTaskTitles: string[]) => {
+  if (!apiKey) throw new Error('API key not set');
+  return extractTasks(apiKey, noteContent, noteTitle, existingTaskTitles);
+});

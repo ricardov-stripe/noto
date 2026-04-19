@@ -5,6 +5,7 @@ import { NoteEditor } from './components/NoteEditor';
 import { TaskPanel, type TaskSuggestion } from './components/TaskPanel';
 import { TaskListView } from './components/TaskListView';
 import { ScheduleView } from './components/ScheduleView';
+import { SetupScreen } from './components/SetupScreen';
 
 type View = 'notes' | 'tasks' | 'schedule';
 
@@ -32,6 +33,7 @@ export default function App() {
   const [freeSlots, setFreeSlots] = useState<FreeSlot[]>([]);
   const [selectedDate, setSelectedDate] = useState(() => new Date().toISOString().split('T')[0]);
   const [apiKey, setApiKey] = useState('');
+  const [apiKeyLoaded, setApiKeyLoaded] = useState(false);
 
   const debounceRef = useRef<ReturnType<typeof setTimeout>>();
 
@@ -58,7 +60,8 @@ export default function App() {
     // @ts-expect-error config not in typed API yet
     window.actionflow.config?.getApiKey?.().then((key: string) => {
       if (key) setApiKey(key);
-    });
+      setApiKeyLoaded(true);
+    }).catch(() => setApiKeyLoaded(true));
   }, []);
 
   // Load calendar events
@@ -185,6 +188,11 @@ export default function App() {
         );
     }
   };
+
+  // Show setup screen if no API key (only in Electron where IPC is available)
+  if (apiKeyLoaded && !apiKey && window.actionflow) {
+    return <SetupScreen onSave={(key) => setApiKey(key)} />;
+  }
 
   return (
     <div style={{ display: 'flex', height: '100vh', fontFamily: '-apple-system, BlinkMacSystemFont, sans-serif' }}>

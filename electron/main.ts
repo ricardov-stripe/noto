@@ -2,6 +2,7 @@ import { app, BrowserWindow, ipcMain } from 'electron';
 import path from 'path';
 import { Database } from './database';
 import { extractTasks } from './extraction';
+import { fetchCalendarEvents, findFreeSlots } from './calendar';
 
 function createWindow() {
   const win = new BrowserWindow({
@@ -53,4 +54,11 @@ ipcMain.handle('config:getApiKey', () => apiKey);
 ipcMain.handle('ai:extract', async (_, noteContent: string, noteTitle: string, existingTaskTitles: string[]) => {
   if (!apiKey) throw new Error('API key not set');
   return extractTasks(apiKey, noteContent, noteTitle, existingTaskTitles);
+});
+
+// Calendar
+ipcMain.handle('calendar:events', (_, daysAhead?: number) => fetchCalendarEvents(daysAhead));
+ipcMain.handle('calendar:freeSlots', (_, date: string, workStart: number, workEnd: number) => {
+  const events = fetchCalendarEvents(7);
+  return findFreeSlots(events, date, workStart, workEnd);
 });

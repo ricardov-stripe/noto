@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
-import type { Note, Task, Folder } from './api';
+import type { Note, Task, Folder, CalendarEvent, FreeSlot } from './api';
 import { Sidebar } from './components/Sidebar';
 import { NoteEditor } from './components/NoteEditor';
 import { TaskPanel, type TaskSuggestion } from './components/TaskPanel';
@@ -8,18 +8,6 @@ import { ScheduleView } from './components/ScheduleView';
 import { SetupScreen } from './components/SetupScreen';
 
 type View = 'notes' | 'tasks' | 'schedule';
-
-interface CalendarEvent {
-  title: string;
-  date: string;
-  startHour: number;
-  endHour: number;
-}
-
-interface FreeSlot {
-  start: number;
-  end: number;
-}
 
 export default function App() {
   const [notes, setNotes] = useState<Note[]>([]);
@@ -57,8 +45,7 @@ export default function App() {
   // Load API key
   useEffect(() => {
     if (!window.actionflow) return;
-    // @ts-expect-error config not in typed API yet
-    window.actionflow.config?.getApiKey?.().then((key: string) => {
+    window.actionflow.config.getApiKey().then((key) => {
       if (key) setApiKey(key);
       setApiKeyLoaded(true);
     }).catch(() => setApiKeyLoaded(true));
@@ -67,8 +54,7 @@ export default function App() {
   // Load calendar events
   useEffect(() => {
     if (!window.actionflow) return;
-    // @ts-expect-error calendar not in typed API yet
-    window.actionflow.calendar?.events?.(7).then((events: CalendarEvent[]) => {
+    window.actionflow.calendar.events(7).then((events) => {
       setCalendarEvents(events);
     });
   }, []);
@@ -76,8 +62,7 @@ export default function App() {
   // Update free slots when date changes
   useEffect(() => {
     if (!window.actionflow) return;
-    // @ts-expect-error calendar not in typed API yet
-    window.actionflow.calendar?.freeSlots?.(selectedDate, 9, 17).then((slots: FreeSlot[]) => {
+    window.actionflow.calendar.freeSlots(selectedDate, 9, 17).then((slots) => {
       setFreeSlots(slots);
     });
   }, [selectedDate]);
@@ -121,7 +106,6 @@ export default function App() {
       setIsExtracting(true);
       try {
         const existingTitles = tasks.filter(t => t.sourceNoteId === activeNoteId).map(t => t.title);
-        // @ts-expect-error ai not in typed API yet
         const extracted = await window.actionflow.ai.extract(html, title, existingTitles);
         setSuggestions(extracted);
       } catch {

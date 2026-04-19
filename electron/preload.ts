@@ -20,4 +20,17 @@ contextBridge.exposeInMainWorld('actionflow', {
     list: () => ipcRenderer.invoke('folders:list'),
     create: (data: { name: string; parentId: number | null }) => ipcRenderer.invoke('folders:create', data),
   },
+  config: {
+    setApiKey: (key: string) => ipcRenderer.invoke('config:setApiKey', key),
+    getApiKey: () => ipcRenderer.invoke('config:getApiKey'),
+  },
+  ai: {
+    extract: (noteContent: string, noteTitle: string, existingTaskTitles: string[]) =>
+      ipcRenderer.invoke('ai:extract', noteContent, noteTitle, existingTaskTitles),
+  },
+  calendar: {
+    events: (daysAhead?: number) => ipcRenderer.invoke('calendar:events', daysAhead),
+    freeSlots: (date: string, workStart: number, workEnd: number) =>
+      ipcRenderer.invoke('calendar:freeSlots', date, workStart, workEnd),
+  },
 });

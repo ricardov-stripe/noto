@@ -1,4 +1,5 @@
 import type { Task } from '../api';
+import { IconCheck } from './Icons';
 
 interface TaskListViewProps {
   tasks: Task[];
@@ -6,46 +7,146 @@ interface TaskListViewProps {
   onNavigateToNote: (noteId: number) => void;
 }
 
-const statusLabels = { todo: 'To Do', in_progress: 'In Progress', done: 'Done' };
-const statusOrder: Task['status'][] = ['todo', 'in_progress', 'done'];
-const priorityColors = { high: '#e53e3e', medium: '#dd6b20', low: '#38a169' };
+const STATUS_LABELS: Record<Task['status'], string> = {
+  todo: 'To Do',
+  in_progress: 'In Progress',
+  done: 'Done',
+};
+const STATUS_ORDER: Task['status'][] = ['todo', 'in_progress', 'done'];
+const PRIORITY_CLASS: Record<Task['priority'], 'high' | 'med' | 'low'> = {
+  high: 'high',
+  medium: 'med',
+  low: 'low',
+};
 
+/**
+ * Tasks view: three groups (To Do / In Progress / Done), each row a single
+ * line with checkbox, title, optional due-date, and a quiet link back to
+ * the source note. Clicking the checkbox cycles status forward (todo →
+ * in_progress → done → todo).
+ */
 export function TaskListView({ tasks, onUpdateStatus, onNavigateToNote }: TaskListViewProps) {
-  const grouped = statusOrder.map(status => ({
+  const grouped = STATUS_ORDER.map((status) => ({
     status,
-    label: statusLabels[status],
-    items: tasks.filter(t => t.status === status),
+    label: STATUS_LABELS[status],
+    items: tasks.filter((t) => t.status === status),
   }));
 
   return (
-    <div style={{ padding: 24, overflowY: 'auto', flex: 1 }}>
-      <h2 style={{ margin: '0 0 16px', fontSize: 18 }}>Tasks</h2>
-      {grouped.map(group => (
-        <div key={group.status} style={{ marginBottom: 24 }}>
-          <h3 style={{ fontSize: 14, color: '#555', marginBottom: 8 }}>
-            {group.label} ({group.items.length})
-          </h3>
-          {group.items.map(task => (
-            <div key={task.id} style={{ border: '1px solid #e0e0e0', borderRadius: 8, padding: 12, marginBottom: 8, display: 'flex', alignItems: 'center', gap: 12 }}>
-              <select value={task.status} onChange={e => onUpdateStatus(task.id, e.target.value as Task['status'])}
-                style={{ fontSize: 12, padding: 2 }}>
-                {statusOrder.map(s => <option key={s} value={s}>{statusLabels[s]}</option>)}
-              </select>
-              <div style={{ flex: 1 }}>
-                <div style={{ fontWeight: 600, fontSize: 14 }}>{task.title}</div>
-                <div style={{ fontSize: 11, color: '#666' }}>
-                  <span style={{ color: priorityColors[task.priority] }}>{task.priority}</span>
-                  {task.dueDate && <span> · Due {task.dueDate}</span>}
-                </div>
-              </div>
-              <button onClick={() => onNavigateToNote(task.sourceNoteId)}
-                style={{ fontSize: 11, cursor: 'pointer', background: 'none', border: '1px solid #ccc', borderRadius: 4, padding: '2px 8px' }}>
-                View Note
-              </button>
-            </div>
-          ))}
+    <section className="view" aria-label="Tasks">
+      <div className="view-head">
+        <h1 className="view-title">Tasks</h1>
+        <div className="view-meta">
+          {tasks.filter((t) => t.status !== 'done').length} OPEN · {tasks.filter((t) => t.status === 'done').length} DONE
         </div>
-      ))}
+      </div>
+
+      <div className="view-body">
+        {tasks.length === 0 && (
+          <div className="empty-section">
+            No tasks yet. Write a note with action items and they'll show up here.
+          </div>
+        )}
+        {grouped.map((group) => (
+          <div className="task-group" key={group.status}>
+            <div className="group-label">
+              <span>{group.label}</span>
+              <span className="group-count">{group.items.length}</span>
+            </div>
+            {group.items.length === 0 && (
+              <div className="empty-section" style={{ padding: '4px 0', fontSize: 11 }}>
+                Empty
+              </div>
+            )}
+            {group.items.map((task) => (
+              <TaskRow
+                key={task.id}
+                task={task}
+                onUpdateStatus={onUpdateStatus}
+                onNavigateToNote={onNavigateToNote}
+              />
+            ))}
+          </div>
+        ))}
+      </div>
+    </section>
+  );
+}
+
+interface TaskRowProps {
+  task: Task;
+  onUpdateStatus: (id: number, status: Task['status']) => void;
+  onNavigateToNote: (noteId: number) => void;
+}
+
+function TaskRow({ task, onUpdateStatus, onNavigateToNote }: TaskRowProps) {
+  const isOverdue =
+    task.status !== 'done' &&
+    task.dueDate != null &&
+    new Date(task.dueDate).getTime() < startOfToday();
+
+  const cycle = () => {
+    const next: Record<Task['status'], Task['status']> = {
+      todo: 'in_progress',
+      in_progress: 'done',
+      done: 'todo',
+    };
+    onUpdateStatus(task.id, next[task.status]);
+  };
+
+  return (
+    <div className={`task-row${task.status === 'done' ? ' done' : ''}${isOverdue ? ' overdue' : ''}`}>
+      <button
+        type="button"
+        className="task-checkbox"
+        title={`Mark ${STATUS_LABELS[task.status]} → ${STATUS_LABELS[nextStatus(task.status)]}`}
+        aria-label="Cycle status"
+        onClick={cycle}
+      >
+        {task.status === 'done' && <IconCheck />}
+      </button>
+
+      <div className="task-title">
+        {task.title}
+        {task.sourceText && <span className="source">"{task.sourceText}"</span>}
+      </div>
+
+      <div style={{ display: 'flex', gap: 'var(--s-sm)', alignItems: 'center' }}>
+        <span className={`priority-pill ${PRIORITY_CLASS[task.priority]}`}>
+          {task.priority}
+        </span>
+        {task.dueDate && <span className="task-due">{formatDueDate(task.dueDate)}</span>}
+      </div>
+
+      <button
+        type="button"
+        className="task-source-link"
+        onClick={() => onNavigateToNote(task.sourceNoteId)}
+      >
+        View note
+      </button>
     </div>
   );
+}
+
+function nextStatus(s: Task['status']): Task['status'] {
+  return s === 'todo' ? 'in_progress' : s === 'in_progress' ? 'done' : 'todo';
+}
+
+function startOfToday(): number {
+  const d = new Date();
+  d.setHours(0, 0, 0, 0);
+  return d.getTime();
+}
+
+function formatDueDate(due: string): string {
+  const d = new Date(due);
+  if (isNaN(d.getTime())) return due;
+  const today = startOfToday();
+  const diffDays = Math.floor((d.getTime() - today) / 86_400_000);
+  if (diffDays < 0) return `OVERDUE · ${d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }).toUpperCase()}`;
+  if (diffDays === 0) return 'TODAY';
+  if (diffDays === 1) return 'TOMORROW';
+  if (diffDays < 7) return d.toLocaleDateString('en-US', { weekday: 'short' }).toUpperCase();
+  return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }).toUpperCase();
 }

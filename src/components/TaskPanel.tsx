@@ -13,38 +13,101 @@ interface TaskPanelProps {
   onDismiss: (index: number) => void;
 }
 
-const priorityColors = { high: '#e53e3e', medium: '#dd6b20', low: '#38a169' };
+const PRIORITY_LABEL: Record<TaskSuggestion['priority'], string> = {
+  high: 'High',
+  medium: 'Medium',
+  low: 'Low',
+};
+const PRIORITY_CLASS: Record<TaskSuggestion['priority'], 'high' | 'med' | 'low'> = {
+  high: 'high',
+  medium: 'med',
+  low: 'low',
+};
 
+/**
+ * AI-extracted task suggestions panel. Three states:
+ *   - loading    → small "Extracting tasks..." line under the header
+ *   - empty      → quiet copy explaining the AI is reading along
+ *   - populated  → suggestion cards with quote + accept/dismiss
+ *
+ * `onAccept`/`onDismiss` are unchanged from the previous version so App.tsx
+ * doesn't need to know we redesigned the surface. Buttons keep their
+ * aria-labels ("Accept" / "Dismiss") for screen reader consistency, even
+ * though the visible labels are now "Add task" and "Skip".
+ */
 export function TaskPanel({ suggestions, isLoading, onAccept, onDismiss }: TaskPanelProps) {
+  const sourceLabel =
+    isLoading ? 'EXTRACTING…'
+      : suggestions.length === 0 ? '0 SUGGESTED'
+      : `${suggestions.length} SUGGESTED`;
+
   return (
-    <aside style={{ width: 280, borderLeft: '1px solid #e0e0e0', padding: 12, overflowY: 'auto' }}>
-      <h3 style={{ margin: '0 0 12px', fontSize: 14 }}>Suggested Tasks</h3>
-
-      {isLoading && <div style={{ color: '#888', fontSize: 13 }}>Extracting tasks...</div>}
-
-      {!isLoading && suggestions.length === 0 && (
-        <div style={{ color: '#888', fontSize: 13 }}>No action items found</div>
-      )}
-
-      {suggestions.map((s, i) => (
-        <div key={i} style={{ border: '1px solid #e0e0e0', borderRadius: 8, padding: 10, marginBottom: 8 }}>
-          <div style={{ fontWeight: 600, fontSize: 13, marginBottom: 4 }}>{s.title}</div>
-          <div style={{ fontSize: 11, color: priorityColors[s.priority], marginBottom: 4 }}>
-            {s.priority}{s.suggestedDueDate ? ` · ${s.suggestedDueDate}` : ''}
-          </div>
-          <div style={{ fontSize: 11, color: '#666', marginBottom: 8 }}>{s.reasoning}</div>
-          <div style={{ display: 'flex', gap: 6 }}>
-            <button aria-label="Accept" onClick={() => onAccept(i)}
-              style={{ flex: 1, padding: '4px 8px', cursor: 'pointer', background: '#38a169', color: '#fff', border: 'none', borderRadius: 4 }}>
-              Accept
-            </button>
-            <button aria-label="Dismiss" onClick={() => onDismiss(i)}
-              style={{ flex: 1, padding: '4px 8px', cursor: 'pointer', background: '#e0e0e0', border: 'none', borderRadius: 4 }}>
-              Dismiss
-            </button>
-          </div>
+    <aside className="task-panel" aria-label="Extracted tasks">
+      <div className="panel-head">
+        <div className="title">
+          <span className="ai-pulse" aria-hidden="true" />
+          AI Tasks
         </div>
-      ))}
+        <div className="source">{sourceLabel}</div>
+      </div>
+
+      <div className="panel-body">
+        {isLoading && suggestions.length === 0 && (
+          <div className="empty-section">Extracting tasks...</div>
+        )}
+
+        {!isLoading && suggestions.length === 0 && (
+          <div className="empty-section">No action items found</div>
+        )}
+
+        {suggestions.map((s, i) => (
+          <article className="suggestion" key={`${s.title}-${i}`}>
+            <div className="row">
+              <span className={`priority-pill ${PRIORITY_CLASS[s.priority]}`}>
+                {PRIORITY_LABEL[s.priority]}
+              </span>
+              <span className="due">{s.suggestedDueDate ?? 'NO DUE DATE'}</span>
+            </div>
+            <div className="what" data-pretext="">{s.title}</div>
+            {s.sourceText && (
+              <div className="from" data-pretext="">{`"${s.sourceText}"`}</div>
+            )}
+            {s.reasoning && (
+              <div className="reasoning" style={{
+                fontFamily: 'var(--font-ui)',
+                fontSize: 11,
+                color: 'var(--text-soft)',
+                fontStyle: 'normal',
+              }}>
+                {s.reasoning}
+              </div>
+            )}
+            <div className="actions">
+              <button
+                className="btn primary"
+                type="button"
+                aria-label="Accept"
+                onClick={() => onAccept(i)}
+              >
+                Add task
+              </button>
+              <button
+                className="btn ghost"
+                type="button"
+                aria-label="Dismiss"
+                onClick={() => onDismiss(i)}
+              >
+                Skip
+              </button>
+            </div>
+          </article>
+        ))}
+      </div>
+
+      <div className="panel-foot">
+        <span className="hint">Extracted from this note</span>
+        <button className="toggle" type="button">PAUSE</button>
+      </div>
     </aside>
   );
 }

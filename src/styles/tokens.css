@@ -1,0 +1,194 @@
+/* ============================================================
+ * Noto · Design tokens + global typography
+ *
+ * Source of truth: /DESIGN.md (do not duplicate values without updating
+ * that file too). All variables are declared on :root so any component
+ * can read them — components do their own scoping for selectors.
+ *
+ * Fonts currently load from CDNs. The follow-up commit moves them to
+ * /public/fonts/ for production reliability and offline use.
+ * ============================================================ */
+
+/* ---------- Fonts (CDN, MIT/OFL/SIL where applicable) ---------- */
+
+/* iA Writer Quattro — variable, MIT (iaolo/iA-Fonts) */
+@font-face {
+  font-family: 'iA Writer Quattro';
+  src: url('https://cdn.jsdelivr.net/gh/iaolo/iA-Fonts@master/iA%20Writer%20Quattro/Variable/iAWriterQuattroV.woff2') format('woff2-variations');
+  font-weight: 100 900;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'iA Writer Quattro';
+  src: url('https://cdn.jsdelivr.net/gh/iaolo/iA-Fonts@master/iA%20Writer%20Quattro/Variable/iAWriterQuattroV-Italic.woff2') format('woff2-variations');
+  font-weight: 100 900;
+  font-style: italic;
+  font-display: swap;
+}
+
+/* iA Writer Mono — variable, MIT */
+@font-face {
+  font-family: 'iA Writer Mono';
+  src: url('https://cdn.jsdelivr.net/gh/iaolo/iA-Fonts@master/iA%20Writer%20Mono/Variable/iAWriterMonoV.woff2') format('woff2-variations');
+  font-weight: 100 900;
+  font-style: normal;
+  font-display: swap;
+}
+
+/* Geist + Geist Mono — variable, SIL OFL (Vercel) */
+@font-face {
+  font-family: 'Geist';
+  src: url('https://cdn.jsdelivr.net/npm/geist@latest/dist/fonts/geist-sans/Geist-Variable.woff2') format('woff2-variations');
+  font-weight: 100 900;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'Geist Mono';
+  src: url('https://cdn.jsdelivr.net/npm/geist@latest/dist/fonts/geist-mono/GeistMono-Variable.woff2') format('woff2-variations');
+  font-weight: 100 900;
+  font-style: normal;
+  font-display: swap;
+}
+
+/* Cabinet Grotesk — Fontshare (free for commercial use) */
+@font-face {
+  font-family: 'Cabinet Grotesk';
+  src: url('https://api.fontshare.com/v2/fonts/cabinet-grotesk/files/700.woff2') format('woff2');
+  font-weight: 700;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'Cabinet Grotesk';
+  src: url('https://api.fontshare.com/v2/fonts/cabinet-grotesk/files/800.woff2') format('woff2');
+  font-weight: 800;
+  font-style: normal;
+  font-display: swap;
+}
+
+/* ---------- Tokens ---------- */
+:root {
+  --bg:           #FAF7F2;
+  --surface:      #FFFFFF;
+  --surface-alt:  #F4EFE6;
+  --text:         #1F1B16;
+  --text-muted:   #76705F;
+  --text-soft:    #A8A192;
+  --border:       #E8E2D5;
+  --border-soft:  #F0EBDF;
+  --accent:       #B8451E;
+  --accent-soft:  #F6E5DA;
+  --accent-ink:   #6B2810;
+  --success:      #4D7A4D;
+  --warning:      #C77B2A;
+  --error:        #9B3329;
+  --info:         #466583;
+
+  --font-display:     'Cabinet Grotesk', ui-sans-serif, system-ui, sans-serif;
+  --font-ui:          'Geist', ui-sans-serif, system-ui, sans-serif;
+  --font-body:        'iA Writer Quattro', ui-monospace, Menlo, monospace;
+  --font-canvas-mono: 'iA Writer Mono', ui-monospace, Menlo, monospace;
+  --font-chrome-mono: 'Geist Mono', ui-monospace, Menlo, monospace;
+
+  --s-2xs: 2px;
+  --s-xs:  4px;
+  --s-sm:  8px;
+  --s-md:  16px;
+  --s-lg:  24px;
+  --s-xl:  32px;
+  --s-2xl: 48px;
+  --s-3xl: 64px;
+
+  --radius-sm:   4px;
+  --radius-md:   8px;
+  --radius-lg:   12px;
+  --radius-pill: 9999px;
+
+  --motion-fast:  120ms ease-out;
+  --motion:       180ms ease-out;
+  --motion-slide: 220ms cubic-bezier(0.32, 0.72, 0.24, 1);
+
+  --shadow-sm: 0 1px 2px rgba(31, 27, 22, 0.04);
+  --shadow-md: 0 4px 16px rgba(31, 27, 22, 0.08);
+  --shadow-lg: 0 12px 40px rgba(31, 27, 22, 0.12);
+
+  --sidebar-w: 240px;
+  --panel-w:   320px;
+  --measure:   64ch;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not(.theme-light) {
+    --bg:           #1A1816;
+    --surface:      #232120;
+    --surface-alt:  #2A2724;
+    --text:         #ECE7DD;
+    --text-muted:   #908874;
+    --text-soft:    #6B6557;
+    --border:       #2D2A26;
+    --border-soft:  #26231F;
+    --accent:       #D26A3F;
+    --accent-soft:  #3A2418;
+    --accent-ink:   #F1B392;
+    --success:      #7AA87A;
+    --warning:      #E5A056;
+    --error:        #D86459;
+    --info:         #7B96B8;
+    --shadow-sm:    0 1px 2px rgba(0, 0, 0, 0.3);
+    --shadow-md:    0 4px 16px rgba(0, 0, 0, 0.4);
+    --shadow-lg:    0 12px 40px rgba(0, 0, 0, 0.5);
+  }
+}
+
+:root.theme-dark {
+  --bg:           #1A1816;
+  --surface:      #232120;
+  --surface-alt:  #2A2724;
+  --text:         #ECE7DD;
+  --text-muted:   #908874;
+  --text-soft:    #6B6557;
+  --border:       #2D2A26;
+  --border-soft:  #26231F;
+  --accent:       #D26A3F;
+  --accent-soft:  #3A2418;
+  --accent-ink:   #F1B392;
+  --success:      #7AA87A;
+  --warning:      #E5A056;
+  --error:        #D86459;
+  --info:         #7B96B8;
+  --shadow-sm:    0 1px 2px rgba(0, 0, 0, 0.3);
+  --shadow-md:    0 4px 16px rgba(0, 0, 0, 0.4);
+  --shadow-lg:    0 12px 40px rgba(0, 0, 0, 0.5);
+}
+
+/* ---------- Reset (small, opinionated) ---------- */
+*, *::before, *::after { box-sizing: border-box; }
+html, body, #root { height: 100%; margin: 0; padding: 0; }
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--font-ui);
+  font-size: 13px;
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
+}
+button { font: inherit; color: inherit; background: none; border: none; padding: 0; cursor: pointer; }
+button:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; border-radius: var(--radius-sm); }
+input, textarea { font: inherit; color: inherit; background: none; border: none; }
+input:focus, textarea:focus { outline: none; }
+[contenteditable]:focus { outline: none; }
+[contenteditable]:focus-visible { outline: none; }
+ul, ol { padding-inline-start: 1.4em; margin: 0; }
+
+@keyframes pulse {
+  0%, 100% { opacity: 0.4; transform: scale(1); }
+  50%      { opacity: 1;   transform: scale(1.15); }
+}
+@keyframes fade-in {
+  from { opacity: 0; transform: translateY(2px); }
+  to   { opacity: 1; transform: translateY(0); }
+}

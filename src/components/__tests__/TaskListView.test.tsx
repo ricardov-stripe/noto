@@ -9,16 +9,17 @@ describe('TaskListView', () => {
     { id: 3, title: 'Deploy v1', description: '', priority: 'low' as const, status: 'done' as const, dueDate: null, sourceNoteId: 2, sourceText: '', createdAt: '', updatedAt: '' },
   ];
 
-  it('groups tasks by status', () => {
+  it('renders all status group labels', () => {
     render(<TaskListView tasks={tasks} onUpdateStatus={vi.fn()} onNavigateToNote={vi.fn()} />);
-    expect(screen.getByText('To Do (1)')).toBeInTheDocument();
-    expect(screen.getByText('In Progress (1)')).toBeInTheDocument();
-    expect(screen.getByText('Done (1)')).toBeInTheDocument();
+    expect(screen.getByText('To Do')).toBeInTheDocument();
+    expect(screen.getByText('In Progress')).toBeInTheDocument();
+    expect(screen.getByText('Done')).toBeInTheDocument();
   });
 
   it('shows task titles', () => {
     render(<TaskListView tasks={tasks} onUpdateStatus={vi.fn()} onNavigateToNote={vi.fn()} />);
     expect(screen.getByText('Write report')).toBeInTheDocument();
     expect(screen.getByText('Review PR')).toBeInTheDocument();
+    expect(screen.getByText('Deploy v1')).toBeInTheDocument();
   });
 });

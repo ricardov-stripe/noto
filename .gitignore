@@ -4,3 +4,6 @@ electron-dist/
 *.db
 *.db-shm
 *.db-wal
+
+# Local design exploration scratch (kept out of source control)
+.design-preview/

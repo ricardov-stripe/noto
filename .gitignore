@@ -2,3 +2,5 @@ node_modules/
 dist/
 electron-dist/
 *.db
+*.db-shm
+*.db-wal

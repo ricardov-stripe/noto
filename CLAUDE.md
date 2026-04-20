@@ -16,9 +16,16 @@ Do not deviate without explicit user approval.
 In QA mode, flag any code that doesn't match `DESIGN.md`.
 
 Key non-negotiables from `DESIGN.md`:
-- **No purple, violet, or AI-magic gradients.** Terracotta accent only.
+- **No purple, violet, or AI-magic gradients.** Terracotta accent (`#B8451E`) only.
 - **Warm paper palette** (`#FAF7F2` light / `#1A1816` dark), not cool gray.
-- **Source Serif 4 for note body**, General Sans for UI, Cabinet Grotesk for display, JetBrains Mono for data/code.
+- **Canvas/chrome type rule:** what the user wrote → iA Writer family. What the app shows → Geist / Cabinet.
+  - **Canvas** (editor body, title, headings): **iA Writer Quattro**.
+  - **Canvas inline `code`**: **iA Writer Mono** (sibling family to Quattro).
+  - **Chrome UI** (sidebar, buttons, panel labels, suggestions): **Geist**.
+  - **Chrome mono** (due dates, shortcuts, status pills, file paths, editor meta line): **Geist Mono**.
+  - **Display** (brand mark, marquee, empty states): **Cabinet Grotesk**.
+  - The two monos never appear on the same surface — iA Mono lives only in the canvas, Geist Mono lives only in the chrome.
+- **Self-host all five fonts** in `public/fonts/`. No CDN. Local-first ethos requires offline-first font loading.
 - **No sparkle/star/wand icons for AI.** Quiet pulse on status dot only.
 - **3-pane layout** preserved: sidebar 240px / editor flex / task panel 320px.
 

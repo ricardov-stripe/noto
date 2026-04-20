@@ -15,29 +15,73 @@
 - **Reference sites researched:** Reflect (reflect.app), Bear (bear.app), Mem (mem.ai), Obsidian (obsidian.md), Tana (tana.inc), Linear (linear.app).
 
 ## Typography
-Three families. Each has a clear role. Loaded from privacy-respecting CDNs (Bunny Fonts, Fontshare) consistent with Noto's local-first ethos.
 
-- **Display** (app brand, marquee headings, empty-state titles): **Cabinet Grotesk** (800/700) — confident geometric sans with character. Used sparingly.
-- **UI / Labels** (sidebar items, buttons, tabs, task panel, metadata): **General Sans** (400/500/600) — clean, distinctive, modern. The chrome.
-- **Note body** (the editor — what you actually write into): **Source Serif 4** (400/600, italic 400) — paper-like, considered, makes writing feel like writing. The whole reason this is a serif: a notes app where the act of writing should feel different from filling out a form.
-- **Mono / data / shortcuts**: **JetBrains Mono** (400/500) — for code blocks, inline `code`, keyboard shortcuts (`⌘N`), tabular numerals in due dates and counts.
+Five families, organized by **surface** rather than role. The product has two surfaces:
 
-**Loading:**
-```html
-<link rel="preconnect" href="https://fonts.bunny.net" />
-<link rel="preconnect" href="https://api.fontshare.com" />
-<link href="https://fonts.bunny.net/css?family=source-serif-4:400,400i,500,600,700&family=jetbrains-mono:400,500,600&display=swap" rel="stylesheet" />
-<link href="https://api.fontshare.com/v2/css?f[]=cabinet-grotesk@400,500,700,800&f[]=general-sans@400,500,600&display=swap" rel="stylesheet" />
-```
+- **Canvas** = the editor — *what you wrote*. Sacred space. Set in iA Writer DNA.
+- **Chrome** = everything around it (sidebar, panels, buttons, status, metadata) — *what the app shows*. Set in Geist + Cabinet.
 
-**Modular scale (1.25 ratio):** 12 / 14 / 16 / 20 / 24 / 32 / 48 / 64 px.
+The change of surface (canvas `#FFFFFF` over chrome `#FAF7F2`) plus the change of type system together enforce the boundary. The canvas should feel like opening a serious writing tool; the chrome should feel like a quiet, modern app.
 
-**Note-body typesetting rules (non-negotiable for a writing surface):**
+### The stack
+
+| Surface | Role | Family | Weights | Use |
+|---|---|---|---|---|
+| Chrome | Display | **Cabinet Grotesk** | 700, 800 | Brand mark (`Noto.`), marquee headings, empty-state hero titles, marketing surfaces |
+| Chrome | UI | **Geist** | 400, 500, 600 | Sidebar nav, buttons, panel labels, suggestion titles, dropdown items, settings |
+| **Canvas** | **Body** | **iA Writer Quattro** | 400, 500, 700, italic 400 | **Note title, headings, body text, italic, bold — everything you typed** |
+| Canvas | Inline mono | **iA Writer Mono** | 400, 500 | Inline `` `code` `` and code blocks *inside notes* (sibling family to Quattro) |
+| Chrome | App mono | **Geist Mono** | 400, 500 | Due dates, keyboard shortcuts (`⌘N`), status pill labels, file paths, timestamps in metadata |
+
+### The non-negotiable rule
+
+> **What you wrote → iA family. What the app shows → Geist / Cabinet.**
+
+This is the rule. Every typographic decision flows from it. Concretely:
+
+- The **note title** is iA Writer Quattro Bold (it's part of what you wrote), not Cabinet Grotesk.
+- **Headings inside notes** (H2, H3) are iA Writer Quattro Bold.
+- **Inline code inside a note** is iA Writer Mono — sibling to Quattro, no flow break.
+- The **editor meta line** (date · category · AI status) sits *inside* the canvas surface but is in Geist Mono — it's app metadata, not your writing. Visually muted, smaller, generous whitespace below before the title starts.
+- **The two monos never appear in the same paragraph.** Canvas mono = iA Mono. Chrome mono = Geist Mono. They live on different surfaces.
+
+### Loading (self-host, do not CDN)
+
+All five fonts are MIT/OFL/SIL — fully ship-clean and self-hostable. Self-hosting is a hard requirement: it removes CDN privacy concerns, eliminates cold-start latency, and matches Noto's local-first ethos (the app must work offline).
+
+Pull the woff2 files into `public/fonts/` and declare with `@font-face`. Subset to Latin. Total over-the-wire ~140 KB.
+
+Sources for the woff2 files:
+- **iA Writer Quattro / Mono** — [github.com/iaolo/iA-Fonts](https://github.com/iaolo/iA-Fonts) (MIT)
+- **Geist / Geist Mono** — [vercel.com/font](https://vercel.com/font) or `@fontsource/geist-sans` + `@fontsource/geist-mono` (SIL OFL)
+- **Cabinet Grotesk** — [fontshare.com/fonts/cabinet-grotesk](https://www.fontshare.com/fonts/cabinet-grotesk) (Indian Type Foundry, free for commercial)
+
+Preload the canvas body font (iA Writer Quattro Regular) in `index.html` — that's the one users will see first when they open a note. Other weights `font-display: swap`.
+
+### Modular scale (1.25 ratio)
+
+12 / 14 / 16 / 20 / 24 / 32 / 48 / 64 px
+
+### Canvas typesetting (non-negotiable for the writing surface)
+
+- `font-family: 'iA Writer Quattro', ui-monospace, Menlo, monospace`
 - `font-size: 17px`, `line-height: 1.65`, `max-width: 64ch`
 - `text-rendering: optimizeLegibility`
 - `font-feature-settings: 'liga', 'kern'`
 - Real italics, never CSS-faked
-- Justified text is a no — left-aligned, ragged right, always
+- Justified text is banned — left-aligned, ragged right, always
+- Note title at 28px / 1.2 / weight 700
+- H2 at 19.5px / 1.3 / weight 700, with 1.4em top margin
+- Inline code in iA Writer Mono, `--accent-soft` background, `--accent-ink` text, `0.9em`
+
+### Chrome typesetting
+
+- UI body: Geist 13px / 1.5 / weight 400, weight 500 for active states
+- Nav labels (section headers): Geist Mono 10px uppercase, 0.12em letter-spacing, `--soft` color
+- Buttons: Geist 13px / weight 500
+- Status pills: Geist Mono 9px uppercase, 0.06em letter-spacing
+- Due dates / shortcuts: Geist Mono 10–11px, `--muted` color
+- Brand mark: Cabinet Grotesk 22px / weight 800 / -0.02em tracking
 
 ## Color
 - **Approach:** Restrained, warm-neutral, single grounded accent.
@@ -136,3 +180,4 @@ CSS:
 | Date | Decision | Rationale |
 |------|----------|-----------|
 | 2026-04-19 | Initial system created via /design-consultation | Editorial-quiet aesthetic, warm paper palette, terracotta accent, Cabinet+General+Source Serif type stack. Three deliberate risks: warm vs cool, terracotta vs purple-violet, serif body vs sans body. |
+| 2026-04-19 | Type system reworked via /design-shotgun (typography track) | Anchored on iA Writer's "calm reading surface" reference. Final hybrid stack: Cabinet Grotesk (display chrome) + Geist (UI chrome) + Geist Mono (chrome mono) + iA Writer Quattro (canvas body) + iA Writer Mono (canvas inline mono). Body shootout compared iA Quattro vs Literata vs Newsreader vs Lora; iA Quattro chosen for: (1) unmistakable iA Writer feel — signals "serious writing tool", (2) sibling pairing with iA Writer Mono inside notes — code never breaks the flow, (3) monospace-derived rhythm gives sustained reading the calm cadence a notes app needs. General Sans, Source Serif 4, JetBrains Mono dropped from the stack. |

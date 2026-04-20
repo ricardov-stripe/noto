@@ -1,0 +1,394 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Noto · Design System Preview · v2</title>
+
+<link rel="preconnect" href="https://fonts.bunny.net" />
+<link rel="preconnect" href="https://api.fontshare.com" />
+<link href="https://fonts.bunny.net/css?family=geist:400,500,600,700&family=geist-mono:400,500,600&display=swap" rel="stylesheet" />
+<link href="https://api.fontshare.com/v2/css?f[]=cabinet-grotesk@400,500,700,800&display=swap" rel="stylesheet" />
+
+<style>
+  /* iA Writer Quattro + Mono — MIT, github.com/iaolo/iA-Fonts (in production: self-host) */
+  @font-face {
+    font-family: 'iA Writer Quattro';
+    src: url('https://cdn.jsdelivr.net/gh/iaolo/iA-Fonts@master/iA%20Writer%20Quattro/Variable/iAWriterQuattroV.woff2') format('woff2-variations');
+    font-weight: 100 900; font-style: normal; font-display: swap;
+  }
+  @font-face {
+    font-family: 'iA Writer Quattro';
+    src: url('https://cdn.jsdelivr.net/gh/iaolo/iA-Fonts@master/iA%20Writer%20Quattro/Variable/iAWriterQuattroV-Italic.woff2') format('woff2-variations');
+    font-weight: 100 900; font-style: italic; font-display: swap;
+  }
+  @font-face {
+    font-family: 'iA Writer Mono';
+    src: url('https://cdn.jsdelivr.net/gh/iaolo/iA-Fonts@master/iA%20Writer%20Mono/Variable/iAWriterMonoV.woff2') format('woff2-variations');
+    font-weight: 100 900; font-style: normal; font-display: swap;
+  }
+
+  :root {
+    /* Light tokens */
+    --bg: #FAF7F2;
+    --surface: #FFFFFF;
+    --surface-alt: #F4EFE6;
+    --text: #1F1B16;
+    --text-muted: #76705F;
+    --text-soft: #A8A192;
+    --border: #E8E2D5;
+    --border-soft: #F0EBDF;
+    --accent: #B8451E;
+    --accent-soft: #F6E5DA;
+    --accent-ink: #6B2810;
+    --success: #4D7A4D;
+    --warning: #C77B2A;
+    --error: #9B3329;
+    --info: #466583;
+
+    /* Type stack */
+    --font-display: 'Cabinet Grotesk', sans-serif;
+    --font-ui: 'Geist', system-ui, sans-serif;
+    --font-body: 'iA Writer Quattro', ui-monospace, Menlo, monospace;
+    --font-canvas-mono: 'iA Writer Mono', ui-monospace, Menlo, monospace;
+    --font-chrome-mono: 'Geist Mono', ui-monospace, Menlo, monospace;
+
+    --s-2xs: 2px; --s-xs: 4px; --s-sm: 8px; --s-md: 16px;
+    --s-lg: 24px; --s-xl: 32px; --s-2xl: 48px; --s-3xl: 64px;
+
+    --motion-fast: 120ms ease-out;
+    --motion: 180ms ease-out;
+    --motion-slide: 220ms cubic-bezier(0.32, 0.72, 0.24, 1);
+  }
+  html.dark {
+    --bg: #1A1816;
+    --surface: #232120;
+    --surface-alt: #2A2724;
+    --text: #ECE7DD;
+    --text-muted: #908874;
+    --text-soft: #6B6557;
+    --border: #2D2A26;
+    --border-soft: #26231F;
+    --accent: #D26A3F;
+    --accent-soft: #3A2418;
+    --accent-ink: #F1B392;
+    --success: #7AA87A;
+    --warning: #E5A056;
+    --error: #D86459;
+    --info: #7B96B8;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body { background: var(--bg); color: var(--text); font-family: var(--font-ui); -webkit-font-smoothing: antialiased; transition: background 200ms ease, color 200ms ease; }
+  .page { max-width: 1280px; margin: 0 auto; padding: 32px 32px 64px; }
+
+  /* Page header */
+  .page-head { display: flex; justify-content: space-between; align-items: flex-end; padding-bottom: 24px; border-bottom: 1px solid var(--border); margin-bottom: 40px; flex-wrap: wrap; gap: 20px; }
+  .page-head h1 { font-family: var(--font-display); font-weight: 800; font-size: 40px; letter-spacing: -0.025em; line-height: 1; }
+  .page-head .sub { color: var(--text-muted); font-size: 14px; margin-top: 8px; max-width: 60ch; line-height: 1.5; }
+  .mode-toggle { display: flex; gap: 4px; background: var(--surface-alt); border-radius: 99px; padding: 4px; }
+  .mode-toggle button { background: transparent; border: none; padding: 6px 14px; border-radius: 99px; font-family: var(--font-ui); font-size: 12px; font-weight: 500; color: var(--text-muted); cursor: pointer; transition: all var(--motion-fast); }
+  .mode-toggle button.on { background: var(--surface); color: var(--text); box-shadow: 0 1px 2px rgba(0,0,0,0.06); }
+
+  .section { margin-bottom: 56px; }
+  .section-label { font-family: var(--font-chrome-mono); font-size: 10px; text-transform: uppercase; letter-spacing: 0.16em; color: var(--text-soft); margin-bottom: 4px; }
+  .section h2 { font-family: var(--font-display); font-weight: 700; font-size: 26px; letter-spacing: -0.02em; margin-bottom: 6px; }
+  .section .section-sub { color: var(--text-muted); font-size: 14px; max-width: 70ch; margin-bottom: 22px; line-height: 1.55; }
+
+  /* Color palette */
+  .palette { display: grid; grid-template-columns: repeat(auto-fill, minmax(170px, 1fr)); gap: 14px; }
+  .swatch { background: var(--surface); border: 1px solid var(--border); border-radius: 8px; overflow: hidden; }
+  .swatch .chip { height: 80px; }
+  .swatch .meta { padding: 10px 12px; }
+  .swatch .meta .token { font-family: var(--font-chrome-mono); font-size: 11px; color: var(--text); margin-bottom: 2px; }
+  .swatch .meta .hex { font-family: var(--font-chrome-mono); font-size: 10px; color: var(--text-muted); }
+  .swatch .meta .use { font-family: var(--font-ui); font-size: 11px; color: var(--text-muted); margin-top: 4px; line-height: 1.3; }
+
+  /* Type specimen */
+  .type-stack { display: grid; grid-template-columns: 1fr; gap: 18px; }
+  .specimen { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 22px 26px; display: grid; grid-template-columns: 220px 1fr; gap: 28px; align-items: center; }
+  .specimen .info { font-family: var(--font-ui); }
+  .specimen .info .role { font-family: var(--font-chrome-mono); font-size: 10px; text-transform: uppercase; letter-spacing: 0.14em; color: var(--text-soft); margin-bottom: 4px; }
+  .specimen .info .name { font-size: 14px; font-weight: 500; color: var(--text); margin-bottom: 4px; }
+  .specimen .info .surface { font-family: var(--font-chrome-mono); font-size: 10px; color: var(--text-muted); }
+  .specimen .info .surface.canvas { color: var(--accent); }
+  .specimen .demo { color: var(--text); }
+
+  .demo-display { font-family: var(--font-display); font-weight: 800; font-size: 36px; letter-spacing: -0.02em; line-height: 1.1; }
+  .demo-ui { font-family: var(--font-ui); font-size: 16px; line-height: 1.5; }
+  .demo-ui .row { display: flex; gap: 14px; align-items: center; flex-wrap: wrap; }
+  .demo-ui .pri { font-family: var(--font-chrome-mono); font-size: 9px; padding: 2px 6px; border-radius: 99px; background: rgba(155,51,41,0.12); color: var(--error); text-transform: uppercase; letter-spacing: 0.06em; }
+  .demo-body { font-family: var(--font-body); font-size: 17px; line-height: 1.65; max-width: 60ch; }
+  .demo-body em { font-style: italic; }
+  .demo-body strong { font-weight: 700; }
+  .demo-canvas-mono { font-family: var(--font-canvas-mono); font-size: 14px; line-height: 1.6; background: var(--accent-soft); color: var(--accent-ink); padding: 6px 10px; border-radius: 4px; display: inline-block; }
+  .demo-chrome-mono { font-family: var(--font-chrome-mono); font-size: 12px; color: var(--text-muted); }
+  .demo-chrome-mono .row { display: flex; gap: 14px; align-items: center; }
+
+  /* Components */
+  .components { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 18px; }
+  .component-card { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 18px 20px; }
+  .component-card .label { font-family: var(--font-chrome-mono); font-size: 10px; text-transform: uppercase; letter-spacing: 0.14em; color: var(--text-soft); margin-bottom: 12px; }
+  .btn { font-family: var(--font-ui); font-weight: 500; font-size: 13px; padding: 8px 14px; border-radius: 6px; border: none; cursor: pointer; transition: all var(--motion-fast); display: inline-flex; align-items: center; gap: 8px; }
+  .btn.primary { background: var(--accent); color: var(--surface); }
+  .btn.primary:hover { background: var(--accent-ink); }
+  .btn.secondary { background: transparent; color: var(--text); border: 1px solid var(--border); }
+  .btn.ghost { background: transparent; color: var(--text-muted); }
+  .btn .kbd { font-family: var(--font-chrome-mono); font-size: 11px; opacity: 0.8; background: rgba(255,255,255,0.15); padding: 1px 5px; border-radius: 3px; }
+  .input { font-family: var(--font-ui); font-size: 13px; padding: 8px 12px; border-radius: 6px; border: 1px solid var(--border); background: var(--surface); color: var(--text); width: 100%; }
+  .input:focus { outline: none; border-color: var(--accent); }
+
+  .pill { font-family: var(--font-chrome-mono); font-size: 9px; padding: 3px 8px; border-radius: 99px; text-transform: uppercase; letter-spacing: 0.06em; display: inline-block; }
+  .pill.high { background: rgba(155,51,41,0.12); color: var(--error); }
+  .pill.med { background: rgba(199,123,42,0.14); color: var(--warning); }
+  .pill.done { background: rgba(77,122,77,0.14); color: var(--success); }
+  .pill.info { background: rgba(70,101,131,0.14); color: var(--info); }
+
+  /* The full editor mockup */
+  .mock-frame { background: var(--bg); border-radius: 14px; overflow: hidden; box-shadow: 0 30px 80px rgba(0,0,0,0.18); border: 1px solid var(--border); }
+  .mock-titlebar { background: var(--surface-alt); border-bottom: 1px solid var(--border); padding: 8px 14px; display: flex; align-items: center; gap: 8px; }
+  .mock-titlebar .dot { width: 11px; height: 11px; border-radius: 50%; }
+  .mock-titlebar .dot.r { background: #FF5F56; }
+  .mock-titlebar .dot.y { background: #FFBD2E; }
+  .mock-titlebar .dot.g { background: #27C93F; }
+  .mock-titlebar .center { flex: 1; text-align: center; font-family: var(--font-ui); font-size: 12px; color: var(--text-muted); }
+
+  .mock { display: grid; grid-template-columns: 240px 1fr 320px; min-height: 640px; }
+
+  /* Sidebar — chrome */
+  .side { padding: 22px 16px; background: var(--bg); border-right: 1px solid var(--border); display: flex; flex-direction: column; gap: 18px; font-family: var(--font-ui); }
+  .brand { font-family: var(--font-display); font-weight: 800; font-size: 22px; letter-spacing: -0.02em; color: var(--text); padding: 0 4px; }
+  .new-btn { background: var(--accent); color: var(--surface); border: none; padding: 9px 12px; border-radius: 6px; font-family: var(--font-ui); font-weight: 500; font-size: 13px; display: flex; align-items: center; justify-content: space-between; cursor: pointer; }
+  .new-btn .kbd { font-family: var(--font-chrome-mono); font-size: 11px; opacity: 0.85; background: rgba(255,255,255,0.15); padding: 1px 6px; border-radius: 3px; }
+  .nav-section { display: flex; flex-direction: column; gap: 2px; }
+  .nav-label { font-family: var(--font-chrome-mono); font-size: 10px; text-transform: uppercase; letter-spacing: 0.12em; color: var(--text-soft); padding: 4px 8px; margin-top: 2px; }
+  .nav-item { padding: 7px 10px; border-radius: 5px; display: flex; align-items: center; justify-content: space-between; font-size: 13px; color: var(--text); font-family: var(--font-ui); cursor: pointer; }
+  .nav-item:hover { background: rgba(0,0,0,0.03); }
+  html.dark .nav-item:hover { background: rgba(255,255,255,0.04); }
+  .nav-item.active { background: var(--accent-soft); color: var(--accent-ink); font-weight: 500; }
+  .nav-item .ct { font-family: var(--font-chrome-mono); font-size: 11px; opacity: 0.6; font-weight: 400; }
+
+  /* Editor — canvas */
+  .editor { padding: 36px 56px 56px; background: var(--surface); overflow: hidden; }
+  .editor-meta { font-family: var(--font-chrome-mono); font-size: 11px; color: var(--text-soft); margin-bottom: 28px; display: flex; gap: 14px; align-items: center; letter-spacing: 0.02em; }
+  .editor-meta .ai-on { color: var(--accent); display: flex; align-items: center; gap: 4px; }
+  .editor-meta .ai-on::before { content: ''; display: inline-block; width: 5px; height: 5px; border-radius: 50%; background: var(--accent); animation: pulse 1.6s ease-in-out infinite; }
+  @keyframes pulse { 0%, 100% { opacity: 0.4; } 50% { opacity: 1; } }
+  .editor-body { font-family: var(--font-body); font-size: 17px; line-height: 1.65; color: var(--text); max-width: 64ch; text-rendering: optimizeLegibility; font-feature-settings: 'liga', 'kern'; }
+  .editor-body h1 { font-family: var(--font-body); font-weight: 700; font-size: 28px; letter-spacing: -0.015em; line-height: 1.2; margin-bottom: 18px; color: var(--text); }
+  .editor-body h2 { font-family: var(--font-body); font-weight: 700; font-size: 19.5px; line-height: 1.3; margin-top: 1.4em; margin-bottom: 0.4em; color: var(--text); }
+  .editor-body p { margin-bottom: 1em; }
+  .editor-body em { font-style: italic; }
+  .editor-body strong { font-weight: 700; }
+  .editor-body code { font-family: var(--font-canvas-mono); background: var(--accent-soft); color: var(--accent-ink); padding: 1px 6px; border-radius: 3px; font-size: 0.9em; }
+  .editor-body blockquote { border-left: 2px solid var(--accent); padding-left: 16px; margin: 1.1em 0; color: var(--text-muted); font-style: italic; }
+  .editor-body ul { margin: 0.5em 0 1em 1.5em; }
+  .editor-body li { margin-bottom: 0.4em; }
+
+  /* Task panel — chrome */
+  .panel { padding: 22px 16px; background: var(--bg); border-left: 1px solid var(--border); display: flex; flex-direction: column; gap: 14px; font-family: var(--font-ui); }
+  .panel-head { display: flex; justify-content: space-between; align-items: center; padding: 0 4px; }
+  .panel-title { font-family: var(--font-ui); font-size: 13px; font-weight: 600; color: var(--text); }
+  .panel-pulse { display: flex; align-items: center; gap: 5px; font-family: var(--font-chrome-mono); font-size: 10px; text-transform: uppercase; letter-spacing: 0.08em; color: var(--accent); }
+  .panel-pulse .dot { width: 5px; height: 5px; border-radius: 50%; background: var(--accent); animation: pulse 1.6s ease-in-out infinite; }
+  .sug { padding: 11px 12px; border-radius: 7px; background: var(--surface); border: 1px solid var(--border); }
+  .sug-title { font-family: var(--font-ui); font-size: 13px; font-weight: 500; line-height: 1.4; color: var(--text); margin-bottom: 6px; }
+  .sug-meta { display: flex; gap: 6px; align-items: center; }
+  .due { font-family: var(--font-chrome-mono); font-size: 10px; color: var(--text-muted); }
+  .sug-actions { margin-top: 10px; display: flex; gap: 6px; }
+  .sug-btn { font-family: var(--font-ui); font-size: 11px; padding: 4px 9px; border-radius: 4px; border: 1px solid var(--border); background: transparent; color: var(--text-muted); cursor: pointer; }
+  .sug-btn.primary { background: var(--text); color: var(--bg); border-color: var(--text); }
+
+  /* Footer */
+  .footnote { margin-top: 56px; padding-top: 24px; border-top: 1px solid var(--border); font-family: var(--font-chrome-mono); font-size: 11px; color: var(--text-muted); display: flex; justify-content: space-between; flex-wrap: wrap; gap: 12px; }
+</style>
+</head>
+<body>
+<div class="page">
+
+  <header class="page-head">
+    <div>
+      <h1>Noto · Design System</h1>
+      <p class="sub">v2 — Editorial Quiet aesthetic, hybrid type stack with iA Writer Quattro on the canvas. The reference: every typographic decision flows from the canvas/chrome rule.</p>
+    </div>
+    <div class="mode-toggle">
+      <button class="on" onclick="document.documentElement.classList.remove('dark'); document.querySelectorAll('.mode-toggle button').forEach(b=>b.classList.toggle('on'))">Light</button>
+      <button onclick="document.documentElement.classList.add('dark'); document.querySelectorAll('.mode-toggle button').forEach(b=>b.classList.toggle('on'))">Dark</button>
+    </div>
+  </header>
+
+  <!-- ====== TYPOGRAPHY ====== -->
+  <section class="section">
+    <div class="section-label">01 · Typography — the heart of it</div>
+    <h2>Five families, organized by surface</h2>
+    <p class="section-sub">The product has two surfaces. Canvas is what you wrote — set in iA Writer DNA. Chrome is what the app shows around you — set in Geist + Cabinet. The two never blur. Inline `code` inside notes is iA Writer Mono (sibling to Quattro). Status pills, due dates, shortcuts in the chrome are Geist Mono. They live on different surfaces by rule.</p>
+
+    <div class="type-stack">
+      <div class="specimen">
+        <div class="info"><div class="role">Display · chrome</div><div class="name">Cabinet Grotesk · 800</div><div class="surface">Brand, marquee, hero</div></div>
+        <div class="demo demo-display">Noto.</div>
+      </div>
+      <div class="specimen">
+        <div class="info"><div class="role">UI · chrome</div><div class="name">Geist · 400/500/600</div><div class="surface">Sidebar, buttons, panel labels</div></div>
+        <div class="demo demo-ui"><div class="row">
+          <button class="btn primary">+ New note <span class="kbd">⌘N</span></button>
+          <button class="btn secondary">Open settings</button>
+          <span class="pill high">high</span>
+          <span>Sidebar item</span>
+        </div></div>
+      </div>
+      <div class="specimen">
+        <div class="info"><div class="role">Body · canvas</div><div class="name">iA Writer Quattro · 400/700</div><div class="surface canvas">→ THE WRITING SURFACE</div></div>
+        <div class="demo demo-body">
+          The right tool gets out of the way. <em>It noticed I'd written "next Thursday"</em> and parsed the date correctly. <strong>No celebration.</strong> No toast. No purple sparkle.
+        </div>
+      </div>
+      <div class="specimen">
+        <div class="info"><div class="role">Inline mono · canvas</div><div class="name">iA Writer Mono · 400</div><div class="surface canvas">Inline `code` inside notes</div></div>
+        <div class="demo"><span class="demo-canvas-mono">extract_tasks(note_id=42)</span></div>
+      </div>
+      <div class="specimen">
+        <div class="info"><div class="role">App mono · chrome</div><div class="name">Geist Mono · 400/500</div><div class="surface">Due dates, shortcuts, status, paths</div></div>
+        <div class="demo demo-chrome-mono"><div class="row">
+          <span>Fri 24 Apr</span><span>·</span><span>⌘N</span><span>·</span><span>Apr 19, 2026 · 2:14 PM</span><span>·</span><span>~/notes/q4.md</span>
+        </div></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ====== COLOR ====== -->
+  <section class="section">
+    <div class="section-label">02 · Color</div>
+    <h2>Warm paper · grounded terracotta</h2>
+    <p class="section-sub">Restrained, warm-neutral, single grounded accent. The accent does the AI-signaling job in earth tones — no purple, no violet, no blue-purple gradients anywhere in the product.</p>
+    <div class="palette">
+      <div class="swatch"><div class="chip" style="background:var(--bg)"></div><div class="meta"><div class="token">--bg</div><div class="hex">#FAF7F2</div><div class="use">App background (warm paper)</div></div></div>
+      <div class="swatch"><div class="chip" style="background:var(--surface)"></div><div class="meta"><div class="token">--surface</div><div class="hex">#FFFFFF</div><div class="use">Canvas, cards</div></div></div>
+      <div class="swatch"><div class="chip" style="background:var(--surface-alt)"></div><div class="meta"><div class="token">--surface-alt</div><div class="hex">#F4EFE6</div><div class="use">Hover, sidebar headers</div></div></div>
+      <div class="swatch"><div class="chip" style="background:var(--text)"></div><div class="meta"><div class="token">--text</div><div class="hex">#1F1B16</div><div class="use">Body text</div></div></div>
+      <div class="swatch"><div class="chip" style="background:var(--text-muted)"></div><div class="meta"><div class="token">--text-muted</div><div class="hex">#76705F</div><div class="use">Metadata, hints</div></div></div>
+      <div class="swatch"><div class="chip" style="background:var(--accent)"></div><div class="meta"><div class="token">--accent</div><div class="hex">#B8451E</div><div class="use">CTA, AI moments (terracotta)</div></div></div>
+      <div class="swatch"><div class="chip" style="background:var(--accent-soft)"></div><div class="meta"><div class="token">--accent-soft</div><div class="hex">#F6E5DA</div><div class="use">Active bg, AI suggestion</div></div></div>
+      <div class="swatch"><div class="chip" style="background:var(--accent-ink)"></div><div class="meta"><div class="token">--accent-ink</div><div class="hex">#6B2810</div><div class="use">Hover/pressed accent</div></div></div>
+      <div class="swatch"><div class="chip" style="background:var(--success)"></div><div class="meta"><div class="token">--success</div><div class="hex">#4D7A4D</div><div class="use">Done state</div></div></div>
+      <div class="swatch"><div class="chip" style="background:var(--warning)"></div><div class="meta"><div class="token">--warning</div><div class="hex">#C77B2A</div><div class="use">Medium priority</div></div></div>
+      <div class="swatch"><div class="chip" style="background:var(--error)"></div><div class="meta"><div class="token">--error</div><div class="hex">#9B3329</div><div class="use">High priority, errors</div></div></div>
+      <div class="swatch"><div class="chip" style="background:var(--info)"></div><div class="meta"><div class="token">--info</div><div class="hex">#466583</div><div class="use">Info messages</div></div></div>
+    </div>
+  </section>
+
+  <!-- ====== COMPONENTS ====== -->
+  <section class="section">
+    <div class="section-label">03 · Components</div>
+    <h2>The building blocks</h2>
+    <p class="section-sub">Buttons, inputs, pills — chrome elements all set in Geist + Geist Mono. Nothing here lives on the canvas.</p>
+    <div class="components">
+      <div class="component-card"><div class="label">Buttons</div>
+        <div style="display:flex; gap:10px; flex-wrap:wrap;">
+          <button class="btn primary">+ New note</button>
+          <button class="btn secondary">Cancel</button>
+          <button class="btn ghost">Skip</button>
+        </div>
+      </div>
+      <div class="component-card"><div class="label">Input</div>
+        <input class="input" placeholder="Search notes..." />
+      </div>
+      <div class="component-card"><div class="label">Status pills</div>
+        <div style="display:flex; gap:6px; flex-wrap:wrap;">
+          <span class="pill high">high</span>
+          <span class="pill med">medium</span>
+          <span class="pill done">done</span>
+          <span class="pill info">info</span>
+        </div>
+      </div>
+      <div class="component-card"><div class="label">AI suggestion</div>
+        <div class="sug">
+          <div class="sug-title">Send pricing draft to Sam</div>
+          <div class="sug-meta"><span class="pill high">high</span><span class="due">Fri 24 Apr</span></div>
+          <div class="sug-actions">
+            <button class="sug-btn primary">Add</button>
+            <button class="sug-btn">Skip</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ====== EDITOR MOCKUP ====== -->
+  <section class="section">
+    <div class="section-label">04 · The whole thing in context</div>
+    <h2>Notes view — the canvas/chrome rule in action</h2>
+    <p class="section-sub">Sidebar in Geist, panel in Geist + Geist Mono, editor in iA Writer Quattro with iA Writer Mono inline code. Watch the hand-off at the editor's left and right edges — different surface color, different type system, same intent.</p>
+
+    <div class="mock-frame">
+      <div class="mock-titlebar">
+        <div class="dot r"></div><div class="dot y"></div><div class="dot g"></div>
+        <div class="center">Noto — Q4 planning sync</div>
+      </div>
+      <div class="mock">
+        <aside class="side">
+          <div class="brand">Noto.</div>
+          <button class="new-btn">+ New note <span class="kbd">⌘N</span></button>
+          <div class="nav-section">
+            <div class="nav-label">Views</div>
+            <div class="nav-item active">📝 Notes <span class="ct">12</span></div>
+            <div class="nav-item">✓ Tasks <span class="ct">17</span></div>
+            <div class="nav-item">📅 Schedule <span class="ct">3</span></div>
+          </div>
+          <div class="nav-section">
+            <div class="nav-label">Recent</div>
+            <div class="nav-item">Q4 planning sync</div>
+            <div class="nav-item">Pricing brainstorm</div>
+            <div class="nav-item">1:1 with Sam</div>
+          </div>
+        </aside>
+
+        <main class="editor">
+          <div class="editor-meta">
+            <span>Apr 19, 2026 · 2:14 PM</span>
+            <span>Work</span>
+            <span class="ai-on">AI watching</span>
+          </div>
+          <div class="editor-body">
+            <h1>Q4 planning sync</h1>
+            <p>Three big rocks emerged from the planning sync this morning. The pricing page is the one I'm <em>most</em> worried about — we keep deferring it, and the marketing team is asking weekly.</p>
+            <h2>The three rocks</h2>
+            <p>Ship the new editor by mid-November. Sam owns the Postgres migration and is prototyping with <code>pg_dump --schema-only</code> on staging. Pricing redesign needs a comparison table.</p>
+            <blockquote>If we ship the editor without the migration, users on the old plan will see broken historical data.</blockquote>
+            <p>Maybe we ship the editor as <strong>opt-in</strong> first, run both in parallel for two weeks, then default-on.</p>
+          </div>
+        </main>
+
+        <aside class="panel">
+          <div class="panel-head">
+            <div class="panel-title">AI Tasks</div>
+            <div class="panel-pulse"><span class="dot"></span>watching</div>
+          </div>
+          <div class="sug">
+            <div class="sug-title">Send pricing draft to Sam</div>
+            <div class="sug-meta"><span class="pill high">high</span><span class="due">Fri 24 Apr</span></div>
+            <div class="sug-actions"><button class="sug-btn primary">Add</button><button class="sug-btn">Skip</button></div>
+          </div>
+          <div class="sug">
+            <div class="sug-title">Lock the editor design with Marie</div>
+            <div class="sug-meta"><span class="pill high">high</span><span class="due">Thu 3:00 PM</span></div>
+            <div class="sug-actions"><button class="sug-btn primary">Add</button><button class="sug-btn">Skip</button></div>
+          </div>
+          <div class="sug">
+            <div class="sug-title">Schedule Postgres migration window</div>
+            <div class="sug-meta"><span class="pill med">medium</span><span class="due">Next week</span></div>
+            <div class="sug-actions"><button class="sug-btn primary">Add</button><button class="sug-btn">Skip</button></div>
+          </div>
+        </aside>
+      </div>
+    </div>
+  </section>
+
+  <footer class="footnote">
+    <div>v2 · iA Writer Quattro canvas + Geist chrome + Cabinet display · Locked 2026-04-19</div>
+    <div>Toggle ☀ / ☾ above</div>
+  </footer>
+
+</div>
+</body>
+</html>

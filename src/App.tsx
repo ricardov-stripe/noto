@@ -8,6 +8,7 @@ import { TaskPanel, type TaskSuggestion } from './components/TaskPanel';
 import { TaskListView } from './components/TaskListView';
 import { ScheduleView } from './components/ScheduleView';
 import { SetupScreen } from './components/SetupScreen';
+import { CommandPalette } from './components/CommandPalette';
 
 const THEME_STORAGE_KEY = 'noto.theme';
 
@@ -43,6 +44,21 @@ export default function App() {
 
   const toggleTheme = useCallback(() => {
     setTheme((t) => (t === 'dark' ? 'light' : 'dark'));
+  }, []);
+
+  /* ------------------------------ command palette ------------------------------ */
+  const [paletteOpen, setPaletteOpen] = useState(false);
+
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      // ⌘K / Ctrl+K toggles the command palette globally.
+      if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'k') {
+        e.preventDefault();
+        setPaletteOpen((o) => !o);
+      }
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
   }, []);
 
   /* ------------------------------ debounce ref ------------------------------ */
@@ -228,6 +244,7 @@ export default function App() {
       <Titlebar
         theme={theme}
         onToggleTheme={toggleTheme}
+        onOpenSearch={() => setPaletteOpen(true)}
         crumb={{
           folder:
             activeView === 'notes'
@@ -309,6 +326,19 @@ export default function App() {
           />
         )}
       </div>
+
+      <CommandPalette
+        open={paletteOpen}
+        notes={notes}
+        tasks={tasks}
+        onClose={() => setPaletteOpen(false)}
+        onOpenNote={(id) => {
+          setActiveNoteId(id);
+          setActiveView('notes');
+        }}
+        onSelectView={setActiveView}
+        onCreateNote={handleCreateNote}
+      />
     </div>
   );
 }

@@ -13,6 +13,7 @@ interface SidebarProps {
   onSelectNote: (id: number) => void;
   onSelectView: (view: View) => void;
   onCreateNote: () => void;
+  onOpenSettings: () => void;
 }
 
 /**
@@ -34,6 +35,7 @@ export function Sidebar({
   onSelectNote,
   onSelectView,
   onCreateNote,
+  onOpenSettings,
 }: SidebarProps) {
   const recents = useMemo(
     () =>
@@ -141,7 +143,7 @@ export function Sidebar({
       <div className="sidebar-footer">
         <div className="avatar" aria-hidden="true">R</div>
         <div className="who"><strong>ricardo</strong></div>
-        <button className="icon-btn" type="button" title="Settings" aria-label="Settings">
+        <button className="icon-btn" type="button" title="Settings" aria-label="Settings" onClick={onOpenSettings}>
           <IconSettings />
         </button>
       </div>

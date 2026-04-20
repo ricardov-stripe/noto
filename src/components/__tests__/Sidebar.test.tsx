@@ -23,7 +23,15 @@ describe('Sidebar', () => {
     onSelectNote: vi.fn(),
     onSelectView: vi.fn(),
     onCreateNote: vi.fn(),
+    onOpenSettings: vi.fn(),
   };
+
+  it('calls onOpenSettings when settings button clicked', () => {
+    const onOpenSettings = vi.fn();
+    render(<Sidebar {...defaults} onOpenSettings={onOpenSettings} />);
+    fireEvent.click(screen.getByLabelText('Settings'));
+    expect(onOpenSettings).toHaveBeenCalled();
+  });
 
   it('renders folder list', () => {
     render(<Sidebar {...defaults} />);

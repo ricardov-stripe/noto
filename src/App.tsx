@@ -9,6 +9,7 @@ import { TaskListView } from './components/TaskListView';
 import { ScheduleView } from './components/ScheduleView';
 import { SetupScreen } from './components/SetupScreen';
 import { CommandPalette } from './components/CommandPalette';
+import { SettingsModal } from './components/SettingsModal';
 
 const THEME_STORAGE_KEY = 'noto.theme';
 
@@ -48,6 +49,7 @@ export default function App() {
 
   /* ------------------------------ command palette ------------------------------ */
   const [paletteOpen, setPaletteOpen] = useState(false);
+  const [settingsOpen, setSettingsOpen] = useState(false);
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
@@ -269,6 +271,7 @@ export default function App() {
           }}
           onSelectView={setActiveView}
           onCreateNote={handleCreateNote}
+          onOpenSettings={() => setSettingsOpen(true)}
         />
 
         {activeView === 'notes' && (
@@ -338,6 +341,13 @@ export default function App() {
         }}
         onSelectView={setActiveView}
         onCreateNote={handleCreateNote}
+      />
+
+      <SettingsModal
+        open={settingsOpen}
+        apiKey={apiKey}
+        onClose={() => setSettingsOpen(false)}
+        onApiKeyChange={setApiKey}
       />
     </div>
   );

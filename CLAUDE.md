@@ -9,6 +9,19 @@ Local-first notes app with AI-powered task extraction and calendar integration.
 - Anthropic SDK (task extraction from notes)
 - Tiptap (rich text editor)
 
+## Design System
+Always read `DESIGN.md` before making any visual or UI decisions.
+All font choices, colors, spacing, and aesthetic direction are defined there.
+Do not deviate without explicit user approval.
+In QA mode, flag any code that doesn't match `DESIGN.md`.
+
+Key non-negotiables from `DESIGN.md`:
+- **No purple, violet, or AI-magic gradients.** Terracotta accent only.
+- **Warm paper palette** (`#FAF7F2` light / `#1A1816` dark), not cool gray.
+- **Source Serif 4 for note body**, General Sans for UI, Cabinet Grotesk for display, JetBrains Mono for data/code.
+- **No sparkle/star/wand icons for AI.** Quiet pulse on status dot only.
+- **3-pane layout** preserved: sidebar 240px / editor flex / task panel 320px.
+
 ## Skill routing
 
 When the user's request matches an available skill, ALWAYS invoke it using the Skill

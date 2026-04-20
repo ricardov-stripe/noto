@@ -9,60 +9,62 @@
  * /public/fonts/ for production reliability and offline use.
  * ============================================================ */
 
-/* ---------- Fonts (CDN, MIT/OFL/SIL where applicable) ---------- */
+/* ---------- Fonts (self-hosted under /public/fonts/) ----------
+ *
+ * Vite serves /public at the root in dev and copies it to /dist on build,
+ * so `/fonts/...` works the same in dev and production. Sources:
+ *   - iA Writer Quattro/Mono   — MIT (github.com/iaolo/iA-Fonts), TTF only
+ *   - Geist + Geist Mono       — SIL OFL (Vercel), woff2 variable
+ *   - Cabinet Grotesk          — Fontshare free-for-commercial-use, woff2
+ *
+ * Total ~620KB, all loaded on first paint (visible above the fold).
+ */
 
-/* iA Writer Quattro — variable, MIT (iaolo/iA-Fonts) */
 @font-face {
   font-family: 'iA Writer Quattro';
-  src: url('https://cdn.jsdelivr.net/gh/iaolo/iA-Fonts@master/iA%20Writer%20Quattro/Variable/iAWriterQuattroV.woff2') format('woff2-variations');
+  src: url('/fonts/iAWriterQuattroV.ttf') format('truetype-variations');
   font-weight: 100 900;
   font-style: normal;
   font-display: swap;
 }
 @font-face {
   font-family: 'iA Writer Quattro';
-  src: url('https://cdn.jsdelivr.net/gh/iaolo/iA-Fonts@master/iA%20Writer%20Quattro/Variable/iAWriterQuattroV-Italic.woff2') format('woff2-variations');
+  src: url('/fonts/iAWriterQuattroV-Italic.ttf') format('truetype-variations');
   font-weight: 100 900;
   font-style: italic;
   font-display: swap;
 }
-
-/* iA Writer Mono — variable, MIT */
 @font-face {
   font-family: 'iA Writer Mono';
-  src: url('https://cdn.jsdelivr.net/gh/iaolo/iA-Fonts@master/iA%20Writer%20Mono/Variable/iAWriterMonoV.woff2') format('woff2-variations');
+  src: url('/fonts/iAWriterMonoV.ttf') format('truetype-variations');
   font-weight: 100 900;
   font-style: normal;
   font-display: swap;
 }
-
-/* Geist + Geist Mono — variable, SIL OFL (Vercel) */
 @font-face {
   font-family: 'Geist';
-  src: url('https://cdn.jsdelivr.net/npm/geist@latest/dist/fonts/geist-sans/Geist-Variable.woff2') format('woff2-variations');
+  src: url('/fonts/Geist-Variable.woff2') format('woff2-variations');
   font-weight: 100 900;
   font-style: normal;
   font-display: swap;
 }
 @font-face {
   font-family: 'Geist Mono';
-  src: url('https://cdn.jsdelivr.net/npm/geist@latest/dist/fonts/geist-mono/GeistMono-Variable.woff2') format('woff2-variations');
+  src: url('/fonts/GeistMono-Variable.woff2') format('woff2-variations');
   font-weight: 100 900;
   font-style: normal;
   font-display: swap;
 }
-
-/* Cabinet Grotesk — Fontshare (free for commercial use) */
 @font-face {
   font-family: 'Cabinet Grotesk';
-  src: url('https://api.fontshare.com/v2/fonts/cabinet-grotesk/files/700.woff2') format('woff2');
+  src: url('/fonts/CabinetGrotesk-Bold.woff2') format('woff2');
   font-weight: 700;
   font-style: normal;
   font-display: swap;
 }
 @font-face {
   font-family: 'Cabinet Grotesk';
-  src: url('https://api.fontshare.com/v2/fonts/cabinet-grotesk/files/800.woff2') format('woff2');
+  src: url('/fonts/CabinetGrotesk-Extrabold.woff2') format('woff2');
   font-weight: 800;
   font-style: normal;
   font-display: swap;

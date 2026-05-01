@@ -121,27 +121,39 @@ table rebuild and pre-migration .bak file.
 
 ---
 
-### 1.3 Temporarily guard `TaskListView.tsx` for nullable sourceNoteId
+### 1.3 Guard `TaskListView.tsx` and `CommandPalette.tsx` for nullable sourceNoteId
 
-**Purpose:** tsc must stay clean at end of each task. The current `TaskListView.tsx` on master accesses `task.sourceNoteId` as if it's always a number — compile will break after 1.2 on fresh branches. If the abandoned branch had this component deleted, copy that deletion too; otherwise apply a minimal guard.
+**Purpose:** tsc must stay clean at end of each task. After 1.2 ported the nullable `sourceNoteId` type into `src/api.ts`, two consumers break:
+- `src/components/TaskListView.tsx` line ~124 — uses `task.sourceNoteId` as a `number` in a navigation call.
+- `src/components/CommandPalette.tsx` line ~98 — includes `sourceNoteId` in a `Result` union type that requires `number`.
 
-**Check first:**
+These are **temporary guards** — `TaskListView.tsx` is removed in Phase 2.5 and `CommandPalette` just needs its Result type widened.
+
+**Action (order matters):**
+
+1. **Check if abandoned branch ported `TaskListView`** with guards:
+   ```bash
+   git show tasks-page-redesign:src/components/TaskListView.tsx 2>&1 | head -3
+   ```
+   If it exists on the branch, port it:
+   ```bash
+   git show tasks-page-redesign:src/components/TaskListView.tsx > src/components/TaskListView.tsx
+   git show tasks-page-redesign:src/components/__tests__/TaskListView.test.tsx > src/components/__tests__/TaskListView.test.tsx
+   ```
+   Else, hand-guard: find `task.sourceNoteId` call sites in `TaskListView.tsx`, wrap with `task.sourceNoteId != null ?` guard before navigation.
+
+2. **Widen `CommandPalette` Result type** to allow `sourceNoteId: number | null`. Search for the `Result` union / Task-variant in the file and update. Additionally, any place that navigates on `sourceNoteId` — guard with `!= null`.
+
+**Verify:**
 ```bash
-git show tasks-page-redesign:src/components/TaskListView.tsx 2>&1 | head -2
+npx tsc --noEmit 2>&1 | tail -5    # must be clean
+npx vitest run 2>&1 | tail -5      # must pass
 ```
-
-**If the file was deleted in the branch** (output shows "fatal: Path ... does not exist in ..."), we still render it on master but with guards. If still exists, copy it: `git show tasks-page-redesign:src/components/TaskListView.tsx > src/components/TaskListView.tsx` and likewise its test.
-
-**Apply guard if needed** — search for `task.sourceNoteId` in TaskListView.tsx and wrap with `task.sourceNoteId != null &&` before any navigation. (The plan for the old branch Phase 1.1 has details — follow that same pattern.)
-
-**Verify:** `npx tsc --noEmit` clean.
 
 **Commit message:**
 ```
-Guard TaskListView against nullable sourceNoteId
+Guard TaskListView and CommandPalette for nullable sourceNoteId
 ```
-
-(Skip commit if no changes were needed.)
 
 ---
 

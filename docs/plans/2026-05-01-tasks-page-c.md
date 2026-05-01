@@ -20,7 +20,7 @@
 2. **TDD on new logic only.** Ported code already has passing tests; don't rewrite them. New logic (tabs, presets, smart sort, Strip, drag, triage predicate) gets test-first.
 3. **Bite-sized commits.** Each numbered task in this plan = one commit.
 4. **Ship green per phase.** `npx vitest run` + `npx tsc --noEmit` must both pass before a phase is marked done.
-5. **Don't modify `tsconfig.json`** — the existing `ignoreDeprecations` line is required.
+5. **Port `tsconfig.json`'s `"ignoreDeprecations": "6.0"` line** (Task 1.1b) — without it, TS 6 treats the `baseUrl` deprecation as a hard error (TS5101) and `tsc --noEmit` fails. The abandoned branch has this fix; master doesn't.
 
 ## Phase 1 — Foundation + reuse port
 
@@ -40,13 +40,41 @@ npx tsc --noEmit 2>&1 | tail -5
 ```
 
 **Expected:**
-- Status: design doc committed; no tracked modifications (untracked `.cursor/`, `images/`, `noto.db.bak*`, `src/lib/collapsibleHeadings.ts`, `src/lib/imageUpload.ts`, `src/lib/sourceHighlight.ts`, `public/favicon.svg` are pre-existing WIP and OK to leave).
-- `HEAD` = `caabcbd Add Approach C design doc` (or similar hash on tasks-page-c).
-- Tests pass, tsc passes.
+- Status: design doc + plan committed; no tracked modifications (untracked `.cursor/`, `images/`, `noto.db.bak*`, `src/lib/collapsibleHeadings.ts`, `src/lib/imageUpload.ts`, `src/lib/sourceHighlight.ts`, `public/favicon.svg` are pre-existing WIP and OK to leave).
+- `HEAD` is the plan commit (`98c127f` or similar) on tasks-page-c.
+- **Tests pass (50/50 at baseline).**
+- **`tsc --noEmit` FAILS** with `error TS5101: Option 'baseUrl' is deprecated…`. This is expected at the start; Task 1.1b fixes it.
 
-If anything is red, STOP and fix before proceeding.
+If tests are red (not tsc), STOP and fix before proceeding. TSC failure is handled next.
 
 **Commit:** none (verification only).
+
+---
+
+### 1.1b Port `tsconfig.json` to silence TS5101
+
+**Purpose:** TS 6 treats the `baseUrl` deprecation as a hard error. The abandoned branch carries a `"ignoreDeprecations": "6.0"` line that resolves this. Port it now so every later task's `tsc --noEmit` check is meaningful.
+
+**Action:**
+
+```bash
+git show tasks-page-redesign:tsconfig.json > tsconfig.json
+```
+
+Inspect the diff — the only change should be adding the `"ignoreDeprecations": "6.0"` line.
+
+**Verify:**
+
+```bash
+npx tsc --noEmit 2>&1 | tail -5
+```
+
+Expected: clean (zero errors).
+
+**Commit message:**
+```
+Port ignoreDeprecations=6.0 to tsconfig for TS baseUrl warning
+```
 
 ---
 

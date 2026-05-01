@@ -17,6 +17,7 @@ const T = (overrides: Partial<Task>): Task => ({
 });
 
 const DEFAULT_VIEW: ViewState = {
+  tab: 'today',
   search: '',
   status: ['todo', 'in_progress'],
   priority: [],

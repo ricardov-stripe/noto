@@ -11,7 +11,10 @@ export type SortKey =
   | 'title-asc'
   | 'smart';
 
+export type Tab = 'new' | 'today' | 'upcoming' | 'all' | 'done';
+
 export interface ViewState {
+  tab: Tab;
   search: string;
   status: StatusKey[];
   priority: PriorityKey[];

@@ -1,15 +1,19 @@
 import { useCallback, useEffect, useReducer, useRef } from 'react';
-import type { ViewState, StatusKey, PriorityKey, DueBucket, SortKey, GroupKey } from './taskFilters';
+import type { ViewState, StatusKey, PriorityKey, DueBucket, SortKey, GroupKey, Tab } from './taskFilters';
+
+export type { Tab } from './taskFilters';
 
 const STORAGE_KEY = 'noto:tasks:view-state';
 
-const VALID_SORT: SortKey[] = ['due-asc', 'due-desc', 'prio-asc', 'prio-desc', 'created-asc', 'created-desc', 'title-asc'];
-const VALID_GROUP: GroupKey[] = ['status', 'due', 'priority', 'note', 'none'];
+const VALID_TAB: Tab[] = ['new', 'today', 'upcoming', 'all', 'done'];
+const VALID_SORT: SortKey[] = ['due-asc', 'due-desc', 'prio-asc', 'prio-desc', 'created-asc', 'created-desc', 'title-asc', 'smart'];
+const VALID_GROUP: GroupKey[] = ['status', 'due', 'priority', 'note', 'week', 'none'];
 const VALID_STATUS: StatusKey[] = ['todo', 'in_progress', 'done'];
 const VALID_PRIO: PriorityKey[] = ['high', 'medium', 'low'];
 const VALID_DUE: DueBucket[] = ['overdue', 'today', 'this-week', 'later', 'none'];
 
 export const DEFAULT_VIEW: ViewState = {
+  tab: 'today',
   search: '',
   status: ['todo', 'in_progress'],
   priority: [],
@@ -31,14 +35,22 @@ export function encodeView(v: ViewState): string {
   if (v.sort !== 'due-asc') p.set('sort', v.sort);
   if (v.group !== 'status') p.set('group', v.group);
   const qs = p.toString();
-  return qs ? `#tasks?${qs}` : '#tasks';
+  const tabSegment = v.tab && v.tab !== 'today' ? `/${v.tab}` : '';
+  return qs ? `#tasks${tabSegment}?${qs}` : `#tasks${tabSegment}`;
 }
 
 export function decodeView(hash: string): Partial<ViewState> {
-  const i = hash.indexOf('?');
-  if (i < 0) return {};
-  const p = new URLSearchParams(hash.slice(i + 1));
   const out: Partial<ViewState> = {};
+  // Parse tab segment: #tasks[/<tab>][?<params>]
+  const match = hash.match(/^#tasks(?:\/([a-z]+))?(?:\?(.*))?$/);
+  if (!match) return out;
+  const [, rawTab, rawQuery] = match;
+  if (rawTab) {
+    if (VALID_TAB.includes(rawTab as Tab)) out.tab = rawTab as Tab;
+    else out.tab = 'today';
+  }
+  if (!rawQuery) return out;
+  const p = new URLSearchParams(rawQuery);
   const q = p.get('q'); if (q != null) out.search = q;
   const status = p.get('status')?.split(',').filter((s) => VALID_STATUS.includes(s as StatusKey)) as StatusKey[] | undefined;
   if (status?.length) out.status = status;
@@ -116,6 +128,7 @@ export function useTasksViewState() {
     setNoteIds: useCallback((noteIds: (number | null)[]) => dispatch({ type: 'set', patch: { noteIds } }), []),
     setSort: useCallback((sort: SortKey) => dispatch({ type: 'set', patch: { sort } }), []),
     setGroup: useCallback((group: GroupKey) => dispatch({ type: 'set', patch: { group } }), []),
+    setTab: useCallback((tab: Tab) => dispatch({ type: 'set', patch: { tab, selection: new Set<number>() } }), []),
     toggleCollapsed: useCallback((key: string) => dispatch({ type: 'toggle-collapsed', key }), []),
     select: useCallback((ids: number[], mode: 'replace' | 'add' | 'toggle' = 'replace') => dispatch({ type: 'select', ids, mode }), []),
     clearSelection: useCallback(() => dispatch({ type: 'clear-selection' }), []),

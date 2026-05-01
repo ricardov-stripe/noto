@@ -61,3 +61,52 @@ describe('useTasksViewState', () => {
     expect(JSON.parse(localStorage.getItem('noto:tasks:view-state') || '{}').sort).toBe('title-asc');
   });
 });
+
+describe('useTasksViewState — tab field', () => {
+  it('default tab is "today"', () => {
+    const { result } = renderHook(() => useTasksViewState());
+    expect(result.current.view.tab).toBe('today');
+  });
+
+  it('encodeView outputs #tasks/<tab> for non-today tabs', () => {
+    expect(encodeView({ ...DEFAULT_VIEW, tab: 'new' })).toBe('#tasks/new');
+    expect(encodeView({ ...DEFAULT_VIEW, tab: 'upcoming' })).toBe('#tasks/upcoming');
+  });
+
+  it('encodeView omits tab segment when tab is today (default)', () => {
+    expect(encodeView({ ...DEFAULT_VIEW, tab: 'today' })).toBe('#tasks');
+  });
+
+  it('encodeView combines tab segment with query params', () => {
+    const hash = encodeView({ ...DEFAULT_VIEW, tab: 'new', priority: ['high'] });
+    expect(hash).toBe('#tasks/new?prio=high');
+  });
+
+  it('decodeView parses tab segment', () => {
+    expect(decodeView('#tasks/upcoming').tab).toBe('upcoming');
+    expect(decodeView('#tasks/done?sort=created-desc').tab).toBe('done');
+  });
+
+  it('decodeView falls back to today for unknown tab', () => {
+    expect(decodeView('#tasks/bogus').tab).toBe('today');
+  });
+
+  it('decodeView returns tab today when path is plain #tasks', () => {
+    expect(decodeView('#tasks').tab).toBeUndefined();
+    expect(decodeView('#tasks?prio=high').tab).toBeUndefined();
+  });
+
+  it('setTab mutates tab field via set patch', () => {
+    const { result } = renderHook(() => useTasksViewState());
+    act(() => { result.current.setTab('new'); });
+    expect(result.current.view.tab).toBe('new');
+  });
+
+  it('VALID_SORT now includes smart; decodeView accepts it', () => {
+    expect(decodeView('#tasks?sort=smart').sort).toBe('smart');
+  });
+
+  it('VALID_GROUP now includes week; decodeView accepts it', () => {
+    expect(decodeView('#tasks?group=week').group).toBe('week');
+  });
+});

@@ -776,7 +776,7 @@
 }
 .task-row.done .task-title { color: var(--text-soft); }
 
-/* Base title typography (TaskListView + TaskRow display mode; .task-title-input adds edit chrome) */
+/* Base title typography (TaskRow display mode; .task-title-input adds edit chrome) */
 .task-title {
   font-family: var(--font-ui);
   font-size: 14px;

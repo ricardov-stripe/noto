@@ -20,7 +20,7 @@ import { CheatsheetOverlay } from './CheatsheetOverlay';
 import { useKeyboardNav, visibleRowIds } from './useKeyboardNav';
 import { isUntriaged } from './TriagedPredicate';
 
-/** Extends legacy TaskListView props with notes + refresh for QuickAddBar / TaskRow / API sync. */
+/** Props for the tasks view: full task/note state plus status and refresh callbacks. */
 export interface TasksViewProps {
   tasks: Task[];
   notes: Note[];

@@ -20,6 +20,7 @@ import { CheatsheetOverlay } from './CheatsheetOverlay';
 import { useKeyboardNav, visibleRowIds } from './useKeyboardNav';
 import { isUntriaged } from './TriagedPredicate';
 import { NewTabBody } from './NewTabBody';
+import { UndoToast } from './UndoToast';
 import { useNow } from './useNow';
 import { stubCalendarProvider } from '../../lib/calendar';
 import type { CalendarEvent } from '../../lib/calendar';
@@ -369,6 +370,44 @@ export function TasksView({
 
   const hideSortGroup = view.tab === 'today' || view.tab === 'new';
 
+  const [scheduleUndo, setScheduleUndo] = useState<{
+    taskId: number;
+    title: string;
+    previousDueDate: string | null;
+    scheduledTo: string;
+  } | null>(null);
+
+  const handleSlotDrop = useCallback(
+    async (slotStart: string, _slotEnd: string, taskId: number) => {
+      const task = tasks.find((t) => t.id === taskId);
+      if (!task) return;
+      const previousDueDate = task.dueDate;
+      try {
+        await api.tasks.update(taskId, { dueDate: slotStart });
+        setScheduleUndo({
+          taskId,
+          title: task.title,
+          previousDueDate,
+          scheduledTo: slotStart,
+        });
+      } finally {
+        await refresh();
+      }
+    },
+    [tasks, refresh],
+  );
+
+  const handleScheduleUndo = useCallback(async () => {
+    if (!scheduleUndo) return;
+    const { taskId, previousDueDate } = scheduleUndo;
+    setScheduleUndo(null);
+    try {
+      await api.tasks.update(taskId, { dueDate: previousDueDate });
+    } finally {
+      await refresh();
+    }
+  }, [scheduleUndo, refresh]);
+
   const listEmpty =
     view.tab !== 'today' &&
     (groups.length === 0 || groups.every((g) => g.tasks.length === 0));
@@ -466,23 +505,35 @@ export function TasksView({
                   <TodayPlate tasks={todayTabScopedTasks} now={now}>
                     {(section, sectionTasks) =>
                       sectionTasks.map((t) => (
-                        <TaskRow
+                        <div
                           key={t.id}
-                          task={t}
-                          selected={view.selection.has(t.id)}
-                          focused={focusedId === t.id}
-                          onRowMouseDown={handleRowMouseDown}
-                          editTitleTrigger={editTitleTrigger}
-                          onConsumeTitleTrigger={() => setEditTitleTrigger(null)}
-                          editDescTrigger={editDescTrigger}
-                          onConsumeDescTrigger={() => setEditDescTrigger(null)}
-                          onUpdateStatus={onUpdateStatus}
-                          onNavigateToNote={onNavigateToNote}
-                          onUpdateTask={handleUpdateTask}
-                          onCreateTask={handleCreateTask}
-                          onDeleteTask={handleDeleteTask}
-                          notes={notes}
-                        />
+                          className="today-plate__row"
+                          draggable
+                          onDragStart={(e) => {
+                            e.dataTransfer.setData(
+                              'application/x-noto-task',
+                              String(t.id),
+                            );
+                            e.dataTransfer.effectAllowed = 'move';
+                          }}
+                        >
+                          <TaskRow
+                            task={t}
+                            selected={view.selection.has(t.id)}
+                            focused={focusedId === t.id}
+                            onRowMouseDown={handleRowMouseDown}
+                            editTitleTrigger={editTitleTrigger}
+                            onConsumeTitleTrigger={() => setEditTitleTrigger(null)}
+                            editDescTrigger={editDescTrigger}
+                            onConsumeDescTrigger={() => setEditDescTrigger(null)}
+                            onUpdateStatus={onUpdateStatus}
+                            onNavigateToNote={onNavigateToNote}
+                            onUpdateTask={handleUpdateTask}
+                            onCreateTask={handleCreateTask}
+                            onDeleteTask={handleDeleteTask}
+                            notes={notes}
+                          />
+                        </div>
                       ))
                     }
                   </TodayPlate>
@@ -494,6 +545,7 @@ export function TasksView({
                   freeSlots={freeSlots}
                   dayStart={dayStartIso}
                   dayEnd={dayEndIso}
+                  onSlotDrop={(start, end, taskId) => void handleSlotDrop(start, end, taskId)}
                 />
               </div>
             );
@@ -512,6 +564,24 @@ export function TasksView({
         open={cheatsheetOpen}
         onClose={() => setCheatsheetOpen(false)}
       />
+      {scheduleUndo && (
+        <UndoToast
+          message={`Scheduled “${scheduleUndo.title}” to ${formatSlotTime(scheduleUndo.scheduledTo)}.`}
+          onUndo={() => void handleScheduleUndo()}
+          onDismiss={() => setScheduleUndo(null)}
+        />
+      )}
     </div>
   );
+}
+
+function formatSlotTime(iso: string): string {
+  try {
+    return new Date(iso).toLocaleTimeString(undefined, {
+      hour: 'numeric',
+      minute: '2-digit',
+    });
+  } catch {
+    return iso;
+  }
 }

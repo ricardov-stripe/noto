@@ -1,3 +1,4 @@
+import type React from 'react';
 import type { CalendarEvent } from '../../lib/calendar';
 import type { Task } from '../../api';
 import type { FreeSlot } from '../../lib/timeSlots';
@@ -68,11 +69,9 @@ export function TodayStrip({
   freeSlots,
   dayStart,
   dayEnd,
-  onSlotDrop: _onSlotDrop,
+  onSlotDrop,
   onEventClick,
 }: TodayStripProps) {
-  void _onSlotDrop;
-
   const w0 = new Date(dayStart).getTime();
   const w1 = new Date(dayEnd).getTime();
   const totalMs = Math.max(0, w1 - w0);
@@ -161,6 +160,25 @@ export function TodayStrip({
                 dayEnd,
               );
               if (heightPct <= 0) return null;
+              const handleDragOver = (e: React.DragEvent) => {
+                if (!onSlotDrop) return;
+                if (!Array.from(e.dataTransfer.types).includes('application/x-noto-task')) return;
+                e.preventDefault();
+                e.dataTransfer.dropEffect = 'move';
+                (e.currentTarget as HTMLElement).classList.add('today-strip__slot--active');
+              };
+              const handleDragLeave = (e: React.DragEvent) => {
+                (e.currentTarget as HTMLElement).classList.remove('today-strip__slot--active');
+              };
+              const handleDrop = (e: React.DragEvent) => {
+                (e.currentTarget as HTMLElement).classList.remove('today-strip__slot--active');
+                if (!onSlotDrop) return;
+                const raw = e.dataTransfer.getData('application/x-noto-task');
+                const id = Number.parseInt(raw, 10);
+                if (!Number.isFinite(id)) return;
+                e.preventDefault();
+                onSlotDrop(slot.start, slot.end, id);
+              };
               return (
                 <div
                   key={slot.start}
@@ -170,6 +188,9 @@ export function TodayStrip({
                   data-slot-end={slot.end}
                   data-drop-type="free-slot"
                   aria-label={`Free ${slot.durationMin} minutes`}
+                  onDragOver={handleDragOver}
+                  onDragLeave={handleDragLeave}
+                  onDrop={handleDrop}
                 />
               );
             })}

@@ -1,4 +1,5 @@
 import type { Task } from '../../api';
+import { isUntriaged } from './TriagedPredicate';
 
 export type StatusKey = Task['status'];
 export type PriorityKey = Task['priority'];
@@ -58,6 +59,8 @@ export function dueBucket(dueDate: string | null): DueBucket {
 }
 
 function passesFilters(t: Task, v: ViewState): boolean {
+  // NEW tab restricts to untriaged open tasks regardless of other status filters.
+  if (v.tab === 'new' && !isUntriaged(t)) return false;
   if (v.status.length > 0 && !v.status.includes(t.status)) return false;
   if (v.priority.length > 0 && !v.priority.includes(t.priority)) return false;
   if (v.due.length > 0 && !v.due.includes(dueBucket(t.dueDate))) return false;

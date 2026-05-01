@@ -83,6 +83,46 @@ describe('taskFilters — smart sort', () => {
   });
 });
 
+describe('taskFilters — NEW tab untriaged filter', () => {
+  const newView = (): ViewState => ({ ...DEFAULT_VIEW, tab: 'new', status: ['todo'], sort: 'created-desc', group: 'none' });
+
+  it('filters to tasks whose updatedAt equals createdAt (untriaged)', () => {
+    const tasks = [
+      T({ id: 1, createdAt: '2026-05-01T10:00:00Z', updatedAt: '2026-05-01T10:00:00Z' }),
+      T({ id: 2, createdAt: '2026-05-01T10:00:00Z', updatedAt: '2026-05-01T10:00:01Z' }),
+    ];
+    const groups = applyView(tasks, newView());
+    expect(groups.flatMap((g) => g.tasks.map((t) => t.id))).toEqual([1]);
+  });
+
+  it('excludes done tasks even if untriaged (via isUntriaged status gate)', () => {
+    const tasks = [
+      T({ id: 1, status: 'done', createdAt: '2026-05-01T10:00:00Z', updatedAt: '2026-05-01T10:00:00Z' }),
+      T({ id: 2, status: 'todo', createdAt: '2026-05-01T10:00:00Z', updatedAt: '2026-05-01T10:00:00Z' }),
+    ];
+    const groups = applyView(tasks, newView());
+    expect(groups.flatMap((g) => g.tasks.map((t) => t.id))).toEqual([2]);
+  });
+
+  it('excludes in_progress tasks even if untriaged', () => {
+    const tasks = [
+      T({ id: 1, status: 'in_progress', createdAt: '2026-05-01T10:00:00Z', updatedAt: '2026-05-01T10:00:00Z' }),
+      T({ id: 2, status: 'todo', createdAt: '2026-05-01T10:00:00Z', updatedAt: '2026-05-01T10:00:00Z' }),
+    ];
+    const groups = applyView(tasks, newView());
+    expect(groups.flatMap((g) => g.tasks.map((t) => t.id))).toEqual([2]);
+  });
+
+  it('other tabs do not apply the untriaged filter', () => {
+    const tasks = [
+      T({ id: 1, createdAt: '2026-05-01T10:00:00Z', updatedAt: '2026-05-01T10:00:00Z' }),
+      T({ id: 2, createdAt: '2026-05-01T10:00:00Z', updatedAt: '2026-05-01T10:00:01Z' }),
+    ];
+    const groups = applyView(tasks, { ...DEFAULT_VIEW, tab: 'all', status: ['todo', 'in_progress'], group: 'none' });
+    expect(groups.flatMap((g) => g.tasks.map((t) => t.id)).sort()).toEqual([1, 2]);
+  });
+});
+
 describe('taskFilters — week grouping', () => {
   const weekView = (): ViewState => ({
     ...DEFAULT_VIEW,

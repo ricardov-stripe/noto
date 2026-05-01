@@ -21,6 +21,7 @@ import { useKeyboardNav, visibleRowIds } from './useKeyboardNav';
 import { isUntriaged } from './TriagedPredicate';
 import { NewTabBody } from './NewTabBody';
 import { UndoToast } from './UndoToast';
+import { SchedulePopover } from './SchedulePopover';
 import { useNow } from './useNow';
 import { stubCalendarProvider } from '../../lib/calendar';
 import type { CalendarEvent } from '../../lib/calendar';
@@ -233,6 +234,7 @@ export function TasksView({
       onStartEditTitle: (id: number) => setEditTitleTrigger(id),
       onStartEditDesc: (id: number) => setEditDescTrigger(id),
       onTabSwitch: setTab,
+      onRequestSchedule: (id: number) => setSchedulingTaskId(id),
     }),
     [
       tasks,
@@ -376,6 +378,7 @@ export function TasksView({
     previousDueDate: string | null;
     scheduledTo: string;
   } | null>(null);
+  const [schedulingTaskId, setSchedulingTaskId] = useState<number | null>(null);
 
   const handleSlotDrop = useCallback(
     async (slotStart: string, _slotEnd: string, taskId: number) => {
@@ -571,6 +574,21 @@ export function TasksView({
           onDismiss={() => setScheduleUndo(null)}
         />
       )}
+      {schedulingTaskId != null && (() => {
+        const target = tasks.find((t) => t.id === schedulingTaskId);
+        if (!target) return null;
+        return (
+          <SchedulePopover
+            taskTitle={target.title}
+            freeSlots={freeSlots}
+            onClose={() => setSchedulingTaskId(null)}
+            onSchedule={(slotStart) => {
+              setSchedulingTaskId(null);
+              void handleSlotDrop(slotStart, '', target.id);
+            }}
+          />
+        );
+      })()}
     </div>
   );
 }

@@ -77,6 +77,7 @@ export function CheatsheetOverlay({ open, onClose }: Props) {
               ['0', 'Priority medium'],
               ['t / T / w / n', 'Due today / tomorrow / weekend / +7d'],
               ['r', 'Clear due'],
+              ['s', 'Schedule into a free slot'],
               ['o', 'Open source note'],
               ['⌘D', 'Duplicate'],
               ['⌫ / Del', 'Delete'],

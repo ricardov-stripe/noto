@@ -92,6 +92,7 @@ export interface NavOptions {
   onStartEditTitle?: (id: number) => void;
   onStartEditDesc?: (id: number) => void;
   onTabSwitch?: (tab: Tab) => void;
+  onRequestSchedule?: (taskId: number) => void;
 }
 
 const TAB_KEY_MAP: Record<string, Tab> = {
@@ -319,6 +320,12 @@ export function useKeyboardNav(opts: NavOptions): {
       if (e.key === 'e' && rowFocusId != null) {
         e.preventDefault();
         opts.onStartEditDesc?.(rowFocusId);
+        return;
+      }
+
+      if (e.key === 's' && rowFocusId != null && !e.metaKey && !e.ctrlKey && !e.altKey) {
+        e.preventDefault();
+        opts.onRequestSchedule?.(rowFocusId);
         return;
       }
     },

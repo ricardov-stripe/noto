@@ -94,3 +94,24 @@ describe('useKeyboardNav — g+<letter> tab switch', () => {
     }).not.toThrow();
   });
 });
+
+describe('useKeyboardNav — s key requests schedule popover', () => {
+  it('fires onRequestSchedule with the focused row id', () => {
+    const onRequestSchedule = vi.fn();
+    const { result } = renderHook(() =>
+      useKeyboardNav(makeOpts({ onRequestSchedule })),
+    );
+    act(() => { result.current.setFocusedId(42); });
+    act(() => { result.current.handleKeyDown(makeEvent('s')); });
+    expect(onRequestSchedule).toHaveBeenCalledWith(42);
+  });
+
+  it('does nothing when no row is focused', () => {
+    const onRequestSchedule = vi.fn();
+    const { result } = renderHook(() =>
+      useKeyboardNav(makeOpts({ onRequestSchedule })),
+    );
+    act(() => { result.current.handleKeyDown(makeEvent('s')); });
+    expect(onRequestSchedule).not.toHaveBeenCalled();
+  });
+});

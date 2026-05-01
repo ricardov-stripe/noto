@@ -1,6 +1,6 @@
-import { useCallback, useState, type KeyboardEvent } from 'react';
+import { useCallback, useRef, useState, type KeyboardEvent } from 'react';
 import type { Task } from '../../api';
-import type { Group } from './taskFilters';
+import type { Group, Tab } from './taskFilters';
 
 export type FocusTarget =
   | { kind: 'row'; id: number }
@@ -91,7 +91,16 @@ export interface NavOptions {
   onShowCheatsheet: () => void;
   onStartEditTitle?: (id: number) => void;
   onStartEditDesc?: (id: number) => void;
+  onTabSwitch?: (tab: Tab) => void;
 }
+
+const TAB_KEY_MAP: Record<string, Tab> = {
+  n: 'new',
+  t: 'today',
+  u: 'upcoming',
+  a: 'all',
+  d: 'done',
+};
 
 export function useKeyboardNav(opts: NavOptions): {
   focus: FocusTarget;
@@ -101,6 +110,7 @@ export function useKeyboardNav(opts: NavOptions): {
   handleKeyDown: (e: KeyboardEvent) => void;
 } {
   const [focus, setFocus] = useState<FocusTarget>(null);
+  const pendingG = useRef<number | null>(null);
 
   const focusedRowId = focus?.kind === 'row' ? focus.id : null;
   const focusedGroupKey = focus?.kind === 'group' ? focus.key : null;
@@ -114,6 +124,32 @@ export function useKeyboardNav(opts: NavOptions): {
       const raw = e.target as unknown;
       const t = raw instanceof HTMLElement ? raw : null;
       if (t?.matches?.('input, textarea, [contenteditable]')) return;
+
+      // Two-stroke `g <letter>` tab switcher, Gmail-style.
+      // `g` primes the ref; the next key within 1s is consumed as a tab
+      // target if it matches a tab letter, otherwise the prime is cleared
+      // and execution falls through to the normal handler.
+      if (
+        e.key === 'g' && !e.metaKey && !e.ctrlKey && !e.altKey && !e.shiftKey
+      ) {
+        e.preventDefault();
+        if (pendingG.current != null) window.clearTimeout(pendingG.current);
+        pendingG.current = window.setTimeout(() => {
+          pendingG.current = null;
+        }, 1000);
+        return;
+      }
+      if (pendingG.current != null) {
+        window.clearTimeout(pendingG.current);
+        pendingG.current = null;
+        const target = TAB_KEY_MAP[e.key];
+        if (target && opts.onTabSwitch) {
+          e.preventDefault();
+          opts.onTabSwitch(target);
+          return;
+        }
+        // Non-matching key after `g` — fall through to normal handling.
+      }
 
       const rows = visibleRowIds(opts.groups, opts.collapsed);
       const taskById = (id: number) => opts.tasks.find((x) => x.id === id);

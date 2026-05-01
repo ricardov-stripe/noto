@@ -44,6 +44,16 @@ export function CheatsheetOverlay({ open, onClose }: Props) {
             ]}
           />
           <Col
+            title="Switch tab"
+            rows={[
+              ['g n', 'New'],
+              ['g t', 'Today'],
+              ['g u', 'Upcoming'],
+              ['g a', 'All'],
+              ['g d', 'Done'],
+            ]}
+          />
+          <Col
             title="Navigation"
             rows={[
               ['j / ↓', 'Next row'],

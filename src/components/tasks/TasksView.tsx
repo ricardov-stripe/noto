@@ -157,6 +157,7 @@ export function TasksView({
       onShowCheatsheet: () => setCheatsheetOpen((open) => !open),
       onStartEditTitle: (id: number) => setEditTitleTrigger(id),
       onStartEditDesc: (id: number) => setEditDescTrigger(id),
+      onTabSwitch: setTab,
     }),
     [
       tasks,
@@ -171,6 +172,7 @@ export function TasksView({
       select,
       clearSelection,
       toggleCollapsed,
+      setTab,
     ],
   );
 

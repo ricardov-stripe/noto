@@ -83,6 +83,19 @@ describe('Database', () => {
       db.createTask({ title: 'B', description: '', priority: 'low', status: 'done', dueDate: null, sourceNoteId: note.id, sourceText: '' });
       expect(db.listTasks({ status: 'todo' })).toHaveLength(1);
     });
+
+    it('empty-patch update still bumps updatedAt (used by Dismiss-to-Later)', async () => {
+      const note = db.createNote({ title: 'N', content: '', folderId: null });
+      const task = db.createTask({
+        title: 'T', description: '', priority: 'medium',
+        status: 'todo', dueDate: null, sourceNoteId: note.id, sourceText: '',
+      });
+      // Ensure SQLite datetime('now') advances by at least one second.
+      await new Promise((r) => setTimeout(r, 1100));
+      db.updateTask(task.id, {});
+      const after = db.getTask(task.id)!;
+      expect(after.updatedAt).not.toBe(task.updatedAt);
+    });
   });
 
   describe('folders', () => {

@@ -150,7 +150,12 @@ export class Database {
 
   updateTask(id: number, data: Partial<Pick<Task, 'title' | 'description' | 'priority' | 'status' | 'dueDate'>>) {
     const fields = Object.entries(data).filter(([, v]) => v !== undefined);
-    if (fields.length === 0) return;
+    if (fields.length === 0) {
+      // Empty patch still bumps updatedAt so "Dismiss to Later" in the NEW
+      // tab can mark a task as triaged without changing anything else.
+      this.db.prepare(`UPDATE tasks SET updatedAt = datetime('now') WHERE id = ?`).run(id);
+      return;
+    }
     const sets = fields.map(([k]) => `${k} = ?`).join(', ');
     this.db.prepare(`UPDATE tasks SET ${sets}, updatedAt = datetime('now') WHERE id = ?`)
       .run(...fields.map(([, v]) => v), id);

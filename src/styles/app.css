@@ -1809,3 +1809,97 @@ input.note-title::placeholder { color: var(--text-soft); }
 @media (prefers-reduced-motion: reduce) {
   .tabstrip__tab { transition: none; }
 }
+
+/* ==================== NEW tab body ==================== */
+.new-tab {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
+.new-tab__meta {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  padding: 4px 0 12px;
+  border-bottom: 1px solid var(--border-soft);
+  margin-bottom: 4px;
+}
+.new-tab__count {
+  font-family: var(--font-mono, 'Geist Mono', monospace);
+  font-weight: 500;
+  font-size: 11px;
+  line-height: 1;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--text);
+}
+.new-tab__extracted {
+  font-family: var(--font-mono, 'Geist Mono', monospace);
+  font-weight: 400;
+  font-size: 11px;
+  line-height: 1;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--text-muted);
+}
+.new-tab__extracted-note {
+  color: var(--text);
+}
+.new-tab__list {
+  display: flex;
+  flex-direction: column;
+}
+.new-tab__actions {
+  display: flex;
+  gap: 12px;
+  padding: 24px 0 8px;
+  border-top: 1px solid var(--border-soft);
+  margin-top: 12px;
+}
+.new-tab__action {
+  background: none;
+  border: 1px solid var(--border-soft);
+  border-radius: 4px;
+  padding: 8px 12px;
+  font-family: var(--font-ui, 'Geist', sans-serif);
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--text-muted);
+  cursor: pointer;
+  transition: color 120ms ease, border-color 120ms ease, background 120ms ease;
+}
+.new-tab__action:hover {
+  color: var(--text);
+  border-color: var(--text-muted);
+  background: var(--surface-alt, rgba(0, 0, 0, 0.02));
+}
+.new-tab__action:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+.new-tab__empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 120px 32px;
+  gap: 4px;
+}
+.new-tab__empty-hero {
+  font-family: var(--font-display, 'Cabinet Grotesk', sans-serif);
+  font-weight: 700;
+  font-size: 42px;
+  line-height: 1;
+  letter-spacing: -0.02em;
+  color: var(--text);
+}
+.new-tab__empty-sub {
+  font-family: var(--font-body, 'Geist', sans-serif);
+  font-weight: 400;
+  font-size: 15px;
+  line-height: 1.5;
+  color: var(--text-muted);
+}
+@media (prefers-reduced-motion: reduce) {
+  .new-tab__action { transition: none; }
+}

@@ -19,6 +19,7 @@ import { BulkActionBar } from './BulkActionBar';
 import { CheatsheetOverlay } from './CheatsheetOverlay';
 import { useKeyboardNav, visibleRowIds } from './useKeyboardNav';
 import { isUntriaged } from './TriagedPredicate';
+import { NewTabBody } from './NewTabBody';
 
 /** Props for the tasks view: full task/note state plus status and refresh callbacks. */
 export interface TasksViewProps {
@@ -270,6 +271,29 @@ export function TasksView({
     }
   }, [view.selection, refresh, clearSelection]);
 
+  const untriagedTasks = useMemo(() => tasks.filter(isUntriaged), [tasks]);
+
+  const handleTriageAllToToday = useCallback(async () => {
+    const todayIso = new Date().toISOString().slice(0, 10);
+    try {
+      await Promise.all(
+        untriagedTasks.map((t) => api.tasks.update(t.id, { dueDate: todayIso })),
+      );
+    } finally {
+      await refresh();
+    }
+  }, [untriagedTasks, refresh]);
+
+  const handleDismissAllToLater = useCallback(async () => {
+    try {
+      // Empty patch bumps updatedAt, marking each task as triaged without
+      // changing anything else. They drop out of NEW and flow to All / Upcoming.
+      await Promise.all(untriagedTasks.map((t) => api.tasks.update(t.id, {})));
+    } finally {
+      await refresh();
+    }
+  }, [untriagedTasks, refresh]);
+
   // TODO(Phase 3/4): hide sort/group on Today/NEW when ControlBar supports hideSortGroup.
 
   const listEmpty =
@@ -316,12 +340,8 @@ export function TasksView({
         )}
       </div>
       <div className="tasks-view__body">
-        {listEmpty ? (
-          <div className="empty-section" role="status">
-            No tasks match this view.
-          </div>
-        ) : (
-          groups.map((g) => (
+        {(() => {
+          const groupsRendered = groups.map((g) => (
             <TaskGroup
               key={g.key}
               group={g}
@@ -342,8 +362,30 @@ export function TasksView({
               onDeleteTask={handleDeleteTask}
               notes={notes}
             />
-          ))
-        )}
+          ));
+
+          if (view.tab === 'new') {
+            const flatFiltered = groups.flatMap((g) => g.tasks);
+            return (
+              <NewTabBody
+                tasks={flatFiltered}
+                notes={notes}
+                onTriageAllToToday={() => void handleTriageAllToToday()}
+                onDismissAllToLater={() => void handleDismissAllToLater()}
+              >
+                {groupsRendered}
+              </NewTabBody>
+            );
+          }
+
+          return listEmpty ? (
+            <div className="empty-section" role="status">
+              No tasks match this view.
+            </div>
+          ) : (
+            groupsRendered
+          );
+        })()}
       </div>
       <CheatsheetOverlay
         open={cheatsheetOpen}

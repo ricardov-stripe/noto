@@ -5,7 +5,7 @@ import { Sidebar, type View } from './components/Sidebar';
 import { Titlebar } from './components/Titlebar';
 import { NoteEditor } from './components/NoteEditor';
 import { TaskPanel, type TaskSuggestion } from './components/TaskPanel';
-import { TaskListView } from './components/TaskListView';
+import { TasksView } from './components/tasks/TasksView';
 import { ScheduleView } from './components/ScheduleView';
 import { SetupScreen } from './components/SetupScreen';
 import { CommandPalette } from './components/CommandPalette';
@@ -312,10 +312,12 @@ export default function App() {
         )}
 
         {activeView === 'tasks' && (
-          <TaskListView
+          <TasksView
             tasks={tasks}
+            notes={notes}
             onUpdateStatus={handleUpdateTaskStatus}
             onNavigateToNote={handleNavigateToNote}
+            onRefreshTasks={refreshTasks}
           />
         )}
 

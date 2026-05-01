@@ -28,6 +28,86 @@ const DEFAULT_VIEW: ViewState = {
   selection: new Set(),
 };
 
+describe('taskFilters — smart sort', () => {
+  // "Today" reference point used by the smart sort
+  const today = new Date(); today.setHours(12, 0, 0, 0);
+  const todayStr = today.toISOString().slice(0, 10);
+  const yesterdayStr = new Date(today.getTime() - 86_400_000).toISOString().slice(0, 10);
+  const tomorrowStr = new Date(today.getTime() + 86_400_000).toISOString().slice(0, 10);
+
+  const smartView = (): ViewState => ({ ...DEFAULT_VIEW, sort: 'smart', group: 'none' });
+
+  it('orders overdue tasks first, oldest-overdue before less-overdue', () => {
+    const older = `${yesterdayStr}T00:00:00.000Z`;
+    const olderOlder = new Date(Date.parse(older) - 86_400_000).toISOString();
+    const tasks = [
+      T({ id: 1, dueDate: tomorrowStr, title: 'future' }),
+      T({ id: 2, dueDate: older, title: 'yesterday' }),
+      T({ id: 3, dueDate: olderOlder, title: 'dayBefore' }),
+    ];
+    const groups = applyView(tasks, smartView());
+    expect(groups.flatMap((g) => g.tasks.map((t) => t.id))).toEqual([3, 2, 1]);
+  });
+
+  it('orders today-scheduled by chronological time', () => {
+    const tasks = [
+      T({ id: 1, dueDate: `${todayStr}T15:30:00.000Z`, title: 'afternoon' }),
+      T({ id: 2, dueDate: `${todayStr}T09:00:00.000Z`, title: 'morning' }),
+      T({ id: 3, dueDate: `${todayStr}T12:00:00.000Z`, title: 'noon' }),
+    ];
+    const groups = applyView(tasks, smartView());
+    expect(groups.flatMap((g) => g.tasks.map((t) => t.id))).toEqual([2, 3, 1]);
+  });
+
+  it('orders today-due unscheduled by priority desc', () => {
+    const tasks = [
+      T({ id: 1, dueDate: todayStr, priority: 'low' }),
+      T({ id: 2, dueDate: todayStr, priority: 'high' }),
+      T({ id: 3, dueDate: todayStr, priority: 'medium' }),
+    ];
+    const groups = applyView(tasks, smartView());
+    expect(groups.flatMap((g) => g.tasks.map((t) => t.id))).toEqual([2, 3, 1]);
+  });
+
+  it('ranks overdue -> scheduled-today -> today-due -> later -> no-due', () => {
+    const tasks = [
+      T({ id: 1, dueDate: null, title: 'nodue' }),
+      T({ id: 2, dueDate: tomorrowStr, title: 'later' }),
+      T({ id: 3, dueDate: todayStr, title: 'today-due' }),
+      T({ id: 4, dueDate: `${todayStr}T10:00:00.000Z`, title: 'today-sched' }),
+      T({ id: 5, dueDate: yesterdayStr, title: 'overdue' }),
+    ];
+    const groups = applyView(tasks, smartView());
+    expect(groups.flatMap((g) => g.tasks.map((t) => t.id))).toEqual([5, 4, 3, 2, 1]);
+  });
+});
+
+describe('taskFilters — week grouping', () => {
+  const weekView = (): ViewState => ({
+    ...DEFAULT_VIEW,
+    status: ['done'],
+    group: 'week',
+    sort: 'created-desc',
+  });
+
+  it('groups done tasks by ISO week of updatedAt', () => {
+    const tasks = [
+      T({ id: 1, status: 'done', updatedAt: '2026-05-01T10:00:00Z', createdAt: '2026-05-01T10:00:00Z' }),
+      T({ id: 2, status: 'done', updatedAt: '2026-05-02T10:00:00Z', createdAt: '2026-05-02T10:00:00Z' }),
+      T({ id: 3, status: 'done', updatedAt: '2026-04-20T10:00:00Z', createdAt: '2026-04-20T10:00:00Z' }),
+    ];
+    const groups = applyView(tasks, weekView());
+    expect(groups.length).toBeGreaterThanOrEqual(2);
+    // Newer weeks come first (descending order because created-desc within, and ISO week sorts correctly)
+    const firstGroupIds = groups[0].tasks.map((t) => t.id);
+    expect(firstGroupIds).toContain(1);
+    expect(firstGroupIds).toContain(2);
+    // id 3 is in a different, older week
+    const hasThreeSeparate = groups.some((g) => g.tasks.some((t) => t.id === 3) && !g.tasks.some((t) => t.id === 1));
+    expect(hasThreeSeparate).toBe(true);
+  });
+});
+
 describe('taskFilters', () => {
   it('default view: open statuses only', () => {
     const tasks = [T({ id: 1, status: 'todo' }), T({ id: 2, status: 'done' })];

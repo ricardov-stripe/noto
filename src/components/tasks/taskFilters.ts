@@ -3,12 +3,13 @@ import type { Task } from '../../api';
 export type StatusKey = Task['status'];
 export type PriorityKey = Task['priority'];
 export type DueBucket = 'overdue' | 'today' | 'this-week' | 'later' | 'none';
-export type GroupKey = 'status' | 'due' | 'priority' | 'note' | 'none';
+export type GroupKey = 'status' | 'due' | 'priority' | 'note' | 'week' | 'none';
 export type SortKey =
   | 'due-asc' | 'due-desc'
   | 'prio-asc' | 'prio-desc'
   | 'created-asc' | 'created-desc'
-  | 'title-asc';
+  | 'title-asc'
+  | 'smart';
 
 export interface ViewState {
   search: string;
@@ -86,7 +87,65 @@ function compare(a: Task, b: Task, sort: SortKey): number {
     }
     case 'title-asc':
       return a.title.localeCompare(b.title);
+    case 'smart':
+      return smartCompare(a, b);
   }
+}
+
+/**
+ * Smart sort for the Today view:
+ *   rank 0: overdue (older-overdue first)
+ *   rank 1: scheduled today (with time, chronological)
+ *   rank 2: today-due without time (priority desc, then title)
+ *   rank 3: later (date only)
+ *   rank 4: no due date
+ */
+function smartRank(t: Task): number {
+  if (!t.dueDate) return 4;
+  const todayStr = new Date(startOfToday()).toISOString().slice(0, 10);
+  const dayPart = t.dueDate.slice(0, 10);
+  if (dayPart < todayStr) return 0;
+  if (dayPart === todayStr && hasTime(t.dueDate)) return 1;
+  if (dayPart === todayStr) return 2;
+  return 3;
+}
+
+function hasTime(dueDate: string): boolean {
+  return dueDate.length > 10;
+}
+
+function smartCompare(a: Task, b: Task): number {
+  const ra = smartRank(a);
+  const rb = smartRank(b);
+  if (ra !== rb) return ra - rb;
+  if (ra === 0 || ra === 1) {
+    // overdue: oldest-overdue first; scheduled: chronological
+    return (a.dueDate ?? '').localeCompare(b.dueDate ?? '');
+  }
+  if (ra === 2) {
+    // today-due, no time: priority desc (high=0), then title
+    const cmp = PRIO_RANK[a.priority] - PRIO_RANK[b.priority];
+    if (cmp !== 0) return cmp;
+    return a.title.localeCompare(b.title);
+  }
+  if (ra === 3) {
+    return (a.dueDate ?? '').localeCompare(b.dueDate ?? '');
+  }
+  // ra === 4, no due
+  return a.title.localeCompare(b.title);
+}
+
+function isoWeekKey(iso: string): string {
+  // Returns "YYYY-Www" where ww is ISO-8601 week number.
+  const d = new Date(iso);
+  if (isNaN(d.getTime())) return 'unknown';
+  // Copy the date, adjust to Thursday of the same ISO week
+  const copy = new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate()));
+  const dow = copy.getUTCDay() || 7; // Sun = 0 → treat as 7
+  copy.setUTCDate(copy.getUTCDate() + 4 - dow);
+  const yearStart = new Date(Date.UTC(copy.getUTCFullYear(), 0, 1));
+  const weekNum = Math.ceil(((copy.getTime() - yearStart.getTime()) / 86_400_000 + 1) / 7);
+  return `${copy.getUTCFullYear()}-W${String(weekNum).padStart(2, '0')}`;
 }
 
 function groupKeyFor(t: Task, group: GroupKey): { key: string; label: string; order: number } {
@@ -103,6 +162,13 @@ function groupKeyFor(t: Task, group: GroupKey): { key: string; label: string; or
       return t.sourceNoteId == null
         ? { key: 'manual', label: 'Manual', order: Number.POSITIVE_INFINITY }
         : { key: `note:${t.sourceNoteId}`, label: `Note ${t.sourceNoteId}`, order: t.sourceNoteId };
+    case 'week': {
+      const base = t.updatedAt ?? t.createdAt;
+      const wk = isoWeekKey(base);
+      // Order descending (newer week first) via negative numeric hash
+      const orderNum = -parseInt(wk.replace(/[^0-9]/g, ''), 10);
+      return { key: wk, label: wk, order: orderNum };
+    }
     case 'none':
       return { key: 'all', label: 'All', order: 0 };
   }

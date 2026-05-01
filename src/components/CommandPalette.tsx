@@ -14,7 +14,7 @@ interface CommandPaletteProps {
 
 type Result =
   | { kind: 'note'; id: number; title: string; snippet: string }
-  | { kind: 'task'; id: number; title: string; status: Task['status']; sourceNoteId: number }
+  | { kind: 'task'; id: number; title: string; status: Task['status']; sourceNoteId: number | null }
   | { kind: 'view'; view: View; label: string }
   | { kind: 'action'; id: 'new-note'; label: string; hint: string };
 

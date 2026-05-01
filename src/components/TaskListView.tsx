@@ -80,6 +80,7 @@ interface TaskRowProps {
 }
 
 function TaskRow({ task, onUpdateStatus, onNavigateToNote }: TaskRowProps) {
+  const sourceNoteId = task.sourceNoteId;
   const isOverdue =
     task.status !== 'done' &&
     task.dueDate != null &&
@@ -118,13 +119,15 @@ function TaskRow({ task, onUpdateStatus, onNavigateToNote }: TaskRowProps) {
         {task.dueDate && <span className="task-due">{formatDueDate(task.dueDate)}</span>}
       </div>
 
-      <button
-        type="button"
-        className="task-source-link"
-        onClick={() => onNavigateToNote(task.sourceNoteId)}
-      >
-        View note
-      </button>
+      {sourceNoteId != null && (
+        <button
+          type="button"
+          className="task-source-link"
+          onClick={() => onNavigateToNote(sourceNoteId)}
+        >
+          View note
+        </button>
+      )}
     </div>
   );
 }

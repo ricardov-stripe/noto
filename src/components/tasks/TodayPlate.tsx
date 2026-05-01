@@ -1,15 +1,10 @@
 import { useMemo, type ReactNode } from 'react';
 import type { Task } from '../../api';
+import { localDateYmd } from '../../lib/dateHelpers';
 
 export type TodayPlateSection = 'overdue' | 'scheduled' | 'today';
 
-/** YYYY-MM-DD in local time — matches `dueBucket` / task `dueDate` day part convention. */
-export function localDateYmd(d: Date): string {
-  const y = d.getFullYear();
-  const m = String(d.getMonth() + 1).padStart(2, '0');
-  const day = String(d.getDate()).padStart(2, '0');
-  return `${y}-${m}-${day}`;
-}
+export { localDateYmd };
 
 function hasTimeComponent(dueDate: string): boolean {
   return dueDate.length > 10;

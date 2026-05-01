@@ -49,6 +49,7 @@ export function TasksView({
 }: TasksViewProps) {
   const {
     view,
+    initialTabSource,
     setSearch,
     setStatus,
     setPriority,
@@ -120,7 +121,7 @@ export function TasksView({
   );
 
   const counts = useMemo(() => {
-    const todayStr = new Date().toISOString().slice(0, 10);
+    const todayStr = localDateYmd(new Date());
     return {
       new: tasks.filter(isUntriaged).length,
       today: tasks.filter(
@@ -139,6 +140,22 @@ export function TasksView({
       done: tasks.filter((t) => t.status === 'done').length,
     };
   }, [tasks]);
+
+  // Spec: if the user lands on the Tasks page with no explicit tab in URL or
+  // localStorage and there are untriaged tasks waiting, route them to NEW
+  // so the inbox is the first thing they see. Runs exactly once after the
+  // tasks prop becomes non-empty on first mount.
+  const defaultRouteApplied = useRef(false);
+  useEffect(() => {
+    if (defaultRouteApplied.current) return;
+    if (initialTabSource !== 'default') {
+      defaultRouteApplied.current = true;
+      return;
+    }
+    if (tasks.length === 0) return; // wait for tasks to load
+    defaultRouteApplied.current = true;
+    if (counts.new > 0 && view.tab !== 'new') setTab('new');
+  }, [initialTabSource, tasks.length, counts.new, view.tab, setTab]);
 
   const groups = useMemo(() => applyView(tasks, view), [tasks, view]);
 
@@ -234,7 +251,11 @@ export function TasksView({
       onStartEditTitle: (id: number) => setEditTitleTrigger(id),
       onStartEditDesc: (id: number) => setEditDescTrigger(id),
       onTabSwitch: setTab,
-      onRequestSchedule: (id: number) => setSchedulingTaskId(id),
+      // Spec: `s` opens the SchedulePopover only while on the Today tab.
+      // Free slots are computed for today's window, and surfacing that from
+      // other tabs is confusing UX.
+      onRequestSchedule:
+        view.tab === 'today' ? (id: number) => setSchedulingTaskId(id) : undefined,
     }),
     [
       tasks,
@@ -250,6 +271,7 @@ export function TasksView({
       clearSelection,
       toggleCollapsed,
       setTab,
+      view.tab,
     ],
   );
 
@@ -350,7 +372,7 @@ export function TasksView({
   const untriagedTasks = useMemo(() => tasks.filter(isUntriaged), [tasks]);
 
   const handleTriageAllToToday = useCallback(async () => {
-    const todayIso = new Date().toISOString().slice(0, 10);
+    const todayIso = localDateYmd(new Date());
     try {
       await Promise.all(
         untriagedTasks.map((t) => api.tasks.update(t.id, { dueDate: todayIso })),
@@ -495,6 +517,7 @@ export function TasksView({
                 notes={notes}
                 onTriageAllToToday={() => void handleTriageAllToToday()}
                 onDismissAllToLater={() => void handleDismissAllToLater()}
+                onNavigateToNote={onNavigateToNote}
               >
                 {groupsRendered}
               </NewTabBody>

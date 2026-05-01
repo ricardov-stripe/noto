@@ -6,6 +6,7 @@ export interface NewTabBodyProps {
   notes: Note[];
   onTriageAllToToday: () => void;
   onDismissAllToLater: () => void;
+  onNavigateToNote?: (noteId: number) => void;
   children: ReactNode;
 }
 
@@ -23,6 +24,7 @@ export function NewTabBody({
   notes,
   onTriageAllToToday,
   onDismissAllToLater,
+  onNavigateToNote,
   children,
 }: NewTabBodyProps) {
   if (tasks.length === 0) {
@@ -45,7 +47,17 @@ export function NewTabBody({
         {extractedMeta && (
           <span className="new-tab__extracted">
             last extracted {extractedMeta.relative} FROM{' '}
-            <span className="new-tab__extracted-note">{extractedMeta.noteTitle}</span>
+            {onNavigateToNote && extractedMeta.noteId != null ? (
+              <button
+                type="button"
+                className="new-tab__extracted-note new-tab__extracted-note--link"
+                onClick={() => onNavigateToNote(extractedMeta.noteId!)}
+              >
+                {extractedMeta.noteTitle}
+              </button>
+            ) : (
+              <span className="new-tab__extracted-note">{extractedMeta.noteTitle}</span>
+            )}
           </span>
         )}
       </header>
@@ -73,7 +85,7 @@ export function NewTabBody({
 function findMostRecentExtractedMeta(
   tasks: Task[],
   notes: Note[],
-): { relative: string; noteTitle: string } | null {
+): { relative: string; noteTitle: string; noteId: number | null } | null {
   const withNote = tasks.filter((t) => t.sourceNoteId != null);
   if (withNote.length === 0) return null;
   const newest = withNote.reduce((a, b) => (a.createdAt > b.createdAt ? a : b));
@@ -81,6 +93,7 @@ function findMostRecentExtractedMeta(
   return {
     relative: relativeTime(newest.createdAt),
     noteTitle: note?.title?.trim() || 'untitled note',
+    noteId: newest.sourceNoteId,
   };
 }
 

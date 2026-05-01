@@ -105,6 +105,47 @@ describe('NewTabBody', () => {
     expect(onTriage).toHaveBeenCalledTimes(1);
   });
 
+  it('extracted-note title is a clickable button when onNavigateToNote is provided', () => {
+    const onNavigateToNote = vi.fn();
+    const tasks = [
+      T({ id: 1, sourceNoteId: 10, createdAt: new Date(Date.now() - 5 * 60_000).toISOString() }),
+    ];
+    const notes = [N({ id: 10, title: 'meeting-notes' })];
+    render(
+      <NewTabBody
+        tasks={tasks}
+        notes={notes}
+        onTriageAllToToday={() => {}}
+        onDismissAllToLater={() => {}}
+        onNavigateToNote={onNavigateToNote}
+      >
+        <div />
+      </NewTabBody>,
+    );
+    const link = screen.getByRole('button', { name: /meeting-notes/i });
+    fireEvent.click(link);
+    expect(onNavigateToNote).toHaveBeenCalledWith(10);
+  });
+
+  it('extracted-note title falls back to plain span when no onNavigateToNote', () => {
+    const tasks = [
+      T({ id: 1, sourceNoteId: 10, createdAt: new Date(Date.now() - 5 * 60_000).toISOString() }),
+    ];
+    const notes = [N({ id: 10, title: 'meeting-notes' })];
+    render(
+      <NewTabBody
+        tasks={tasks}
+        notes={notes}
+        onTriageAllToToday={() => {}}
+        onDismissAllToLater={() => {}}
+      >
+        <div />
+      </NewTabBody>,
+    );
+    expect(screen.queryByRole('button', { name: /meeting-notes/i })).not.toBeInTheDocument();
+    expect(screen.getByText('meeting-notes')).toBeInTheDocument();
+  });
+
   it('fires onDismissAllToLater when the button is clicked', () => {
     const onDismiss = vi.fn();
     render(

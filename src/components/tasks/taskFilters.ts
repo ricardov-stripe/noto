@@ -1,5 +1,6 @@
 import type { Task } from '../../api';
 import { isUntriaged } from './TriagedPredicate';
+import { localDateYmd } from '../../lib/dateHelpers';
 
 export type StatusKey = Task['status'];
 export type PriorityKey = Task['priority'];
@@ -108,7 +109,7 @@ function compare(a: Task, b: Task, sort: SortKey): number {
  */
 function smartRank(t: Task): number {
   if (!t.dueDate) return 4;
-  const todayStr = new Date(startOfToday()).toISOString().slice(0, 10);
+  const todayStr = localDateYmd(new Date(startOfToday()));
   const dayPart = t.dueDate.slice(0, 10);
   if (dayPart < todayStr) return 0;
   if (dayPart === todayStr && hasTime(t.dueDate)) return 1;

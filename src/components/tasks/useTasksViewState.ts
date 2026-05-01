@@ -88,33 +88,53 @@ function reducer(state: ViewState, action: Action): ViewState {
   }
 }
 
-function loadInitial(): ViewState {
+function applyPreset(view: ViewState, tab: Tab, explicit: Partial<ViewState>): ViewState {
+  const p = preset(tab);
+  return {
+    ...view,
+    status: explicit.status == null ? p.status : view.status,
+    sort: explicit.sort == null ? p.sort : view.sort,
+    group: explicit.group == null ? p.group : view.group,
+  };
+}
+
+type TabSource = 'url' | 'storage' | 'default';
+
+function loadInitial(): { view: ViewState; tabSource: TabSource } {
   try {
     const fromUrl = decodeView(window.location.hash);
     if (Object.keys(fromUrl).length > 0) {
       const base: ViewState = { ...DEFAULT_VIEW, ...fromUrl, selection: new Set(), collapsed: DEFAULT_VIEW.collapsed };
-      // If the URL specifies a tab but not the status/sort/group, apply the
-      // tab's preset so cold-loads into a tab get that tab's defaults.
-      if (fromUrl.tab) {
-        const p = preset(fromUrl.tab);
-        if (fromUrl.status == null) base.status = p.status;
-        if (fromUrl.sort == null) base.sort = p.sort;
-        if (fromUrl.group == null) base.group = p.group;
-      }
-      return base;
+      const withPreset = fromUrl.tab ? applyPreset(base, fromUrl.tab, fromUrl) : base;
+      return { view: withPreset, tabSource: fromUrl.tab ? 'url' : 'default' };
     }
     const raw = window.localStorage.getItem(STORAGE_KEY);
     if (raw) {
       const parsed = JSON.parse(raw) as Partial<ViewState>;
-      return { ...DEFAULT_VIEW, ...parsed, selection: new Set(), collapsed: { ...DEFAULT_VIEW.collapsed, ...(parsed.collapsed ?? {}) } };
+      const tab = parsed.tab ?? DEFAULT_VIEW.tab;
+      const hydrated: ViewState = {
+        ...DEFAULT_VIEW,
+        ...parsed,
+        selection: new Set(),
+        collapsed: { ...DEFAULT_VIEW.collapsed, ...(parsed.collapsed ?? {}) },
+      };
+      return {
+        view: applyPreset(hydrated, tab, parsed),
+        tabSource: parsed.tab ? 'storage' : 'default',
+      };
     }
   } catch { /* fall through */ }
-  return { ...DEFAULT_VIEW, selection: new Set() };
+  return {
+    view: applyPreset({ ...DEFAULT_VIEW, selection: new Set() }, DEFAULT_VIEW.tab, {}),
+    tabSource: 'default',
+  };
 }
 
 export function useTasksViewState() {
-  const [view, dispatch] = useReducer(reducer, undefined, loadInitial);
+  const initial = useRef(loadInitial()).current;
+  const [view, dispatch] = useReducer(reducer, initial.view);
   const urlTimer = useRef<number | null>(null);
+  const initialTabSource: TabSource = initial.tabSource;
 
   useEffect(() => {
     const persisted = { ...view, selection: undefined };
@@ -133,6 +153,7 @@ export function useTasksViewState() {
 
   return {
     view,
+    initialTabSource,
     setSearch: useCallback((s: string) => dispatch({ type: 'set', patch: { search: s } }), []),
     setStatus: useCallback((status: StatusKey[]) => dispatch({ type: 'set', patch: { status } }), []),
     setPriority: useCallback((priority: PriorityKey[]) => dispatch({ type: 'set', patch: { priority } }), []),

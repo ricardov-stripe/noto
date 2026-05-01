@@ -1845,6 +1845,24 @@ input.note-title::placeholder { color: var(--text-soft); }
 .new-tab__extracted-note {
   color: var(--text);
 }
+.new-tab__extracted-note--link {
+  background: none;
+  border: none;
+  padding: 0;
+  font: inherit;
+  letter-spacing: inherit;
+  text-transform: inherit;
+  color: var(--text);
+  cursor: pointer;
+  border-bottom: 1px dotted var(--text-muted);
+  transition: border-color 120ms ease;
+}
+.new-tab__extracted-note--link:hover { border-bottom-color: var(--accent); }
+.new-tab__extracted-note--link:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+  border-radius: 2px;
+}
 .new-tab__list {
   display: flex;
   flex-direction: column;

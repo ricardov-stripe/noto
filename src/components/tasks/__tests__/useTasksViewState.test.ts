@@ -8,11 +8,12 @@ beforeEach(() => {
 });
 
 describe('useTasksViewState', () => {
-  it('starts with defaults when no URL hash and no localStorage', () => {
+  it('fresh install hydrates with the TODAY tab preset (smart sort, no group)', () => {
     const { result } = renderHook(() => useTasksViewState());
+    expect(result.current.view.tab).toBe('today');
     expect(result.current.view.status).toEqual(['todo', 'in_progress']);
-    expect(result.current.view.sort).toBe('due-asc');
-    expect(result.current.view.group).toBe('status');
+    expect(result.current.view.sort).toBe('smart');
+    expect(result.current.view.group).toBe('none');
   });
 
   it('hydrates from URL hash', () => {
@@ -48,10 +49,12 @@ describe('useTasksViewState', () => {
     });
   });
 
-  it('invalid URL params silently fall back to defaults', () => {
+  it('invalid URL params silently fall back to tab preset defaults', () => {
     window.location.hash = '#tasks?sort=BOGUS&priority=garbage';
     const { result } = renderHook(() => useTasksViewState());
-    expect(result.current.view.sort).toBe('due-asc');
+    // No tab segment in URL → tabSource is 'default', tab stays 'today', and
+    // the TODAY preset's sort (smart) wins over the bogus URL value.
+    expect(result.current.view.sort).toBe('smart');
     expect(result.current.view.priority).toEqual([]);
   });
 
@@ -145,6 +148,33 @@ describe('useTasksViewState — tab field', () => {
     const { result } = renderHook(() => useTasksViewState());
     expect(result.current.view.tab).toBe('upcoming');
     expect(result.current.view.sort).toBe('prio-desc');
+  });
+
+  it('initialTabSource is "url" when the URL specifies a tab', () => {
+    window.location.hash = '#tasks/upcoming';
+    const { result } = renderHook(() => useTasksViewState());
+    expect(result.current.initialTabSource).toBe('url');
+  });
+
+  it('initialTabSource is "default" when no URL and no localStorage', () => {
+    const { result } = renderHook(() => useTasksViewState());
+    expect(result.current.initialTabSource).toBe('default');
+  });
+
+  it('initialTabSource is "default" when URL has params but no tab segment', () => {
+    window.location.hash = '#tasks?sort=prio-desc';
+    const { result } = renderHook(() => useTasksViewState());
+    expect(result.current.initialTabSource).toBe('default');
+  });
+
+  it('initialTabSource is "storage" when localStorage has a tab', () => {
+    window.localStorage.setItem(
+      'noto:tasks:view-state',
+      JSON.stringify({ tab: 'done' }),
+    );
+    const { result } = renderHook(() => useTasksViewState());
+    expect(result.current.initialTabSource).toBe('storage');
+    expect(result.current.view.tab).toBe('done');
   });
 
   it('VALID_SORT now includes smart; decodeView accepts it', () => {

@@ -294,7 +294,7 @@ export function TasksView({
     }
   }, [untriagedTasks, refresh]);
 
-  // TODO(Phase 3/4): hide sort/group on Today/NEW when ControlBar supports hideSortGroup.
+  const hideSortGroup = view.tab === 'today' || view.tab === 'new';
 
   const listEmpty =
     groups.length === 0 || groups.every((g) => g.tasks.length === 0);
@@ -325,6 +325,7 @@ export function TasksView({
           setDue={setDue}
           setSort={setSort}
           setGroup={setGroup}
+          hideSortGroup={hideSortGroup}
         />
         {view.selection.size > 0 && (
           <BulkActionBar

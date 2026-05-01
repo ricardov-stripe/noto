@@ -20,6 +20,14 @@ import { CheatsheetOverlay } from './CheatsheetOverlay';
 import { useKeyboardNav, visibleRowIds } from './useKeyboardNav';
 import { isUntriaged } from './TriagedPredicate';
 import { NewTabBody } from './NewTabBody';
+import { useNow } from './useNow';
+import { stubCalendarProvider } from '../../lib/calendar';
+import type { CalendarEvent } from '../../lib/calendar';
+import { computeFreeSlots } from '../../lib/timeSlots';
+import { TodayPlate, partitionPlateSections, localDateYmd } from './TodayPlate';
+import { TodayStrip } from './TodayStrip';
+import { TaskRow } from './TaskRow';
+import { dueBucket } from './taskFilters';
 
 /** Props for the tasks view: full task/note state plus status and refresh callbacks. */
 export interface TasksViewProps {
@@ -132,6 +140,71 @@ export function TasksView({
 
   const groups = useMemo(() => applyView(tasks, view), [tasks, view]);
 
+  const now = useNow();
+  const flatTaskList = useMemo(() => groups.flatMap((g) => g.tasks), [groups]);
+
+  const todayTabScopedTasks = useMemo(
+    () =>
+      flatTaskList.filter((t) => {
+        const b = dueBucket(t.dueDate);
+        return b === 'overdue' || b === 'today';
+      }),
+    [flatTaskList],
+  );
+
+  const navGroups = useMemo(() => {
+    if (view.tab !== 'today') return groups;
+    const ymd = localDateYmd(now);
+    const { overdue, scheduled, today } = partitionPlateSections(todayTabScopedTasks, ymd);
+    return [{ key: 'all', label: 'All', tasks: [...overdue, ...scheduled, ...today] }];
+  }, [view.tab, groups, todayTabScopedTasks, now]);
+
+  const { dayStartIso, dayEndIso } = useMemo(() => {
+    const d = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 0, 0, 0, 0);
+    const ds = new Date(d);
+    ds.setHours(8, 0, 0, 0);
+    const de = new Date(d);
+    de.setHours(20, 0, 0, 0);
+    return { dayStartIso: ds.toISOString(), dayEndIso: de.toISOString() };
+  }, [now]);
+
+  const [calendarEvents, setCalendarEvents] = useState<CalendarEvent[]>([]);
+  useEffect(() => {
+    let cancelled = false;
+    void stubCalendarProvider.getEvents(dayStartIso, dayEndIso).then((ev) => {
+      if (!cancelled) setCalendarEvents(ev);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [dayStartIso, dayEndIso]);
+
+  const scheduledTodayForStrip = useMemo(() => {
+    const ymd = localDateYmd(now);
+    return partitionPlateSections(todayTabScopedTasks, ymd).scheduled;
+  }, [todayTabScopedTasks, now]);
+
+  const stripBlockers = useMemo(() => {
+    const addMin = (iso: string, min: number) => {
+      const x = new Date(iso);
+      x.setTime(x.getTime() + min * 60_000);
+      return x.toISOString();
+    };
+    const TASK_BLOCK_MIN = 30;
+    return [
+      ...calendarEvents.map((e) => ({ start: e.start, end: e.end })),
+      ...scheduledTodayForStrip.map((t) => ({
+        start: t.dueDate!,
+        end: addMin(t.dueDate!, TASK_BLOCK_MIN),
+      })),
+    ];
+  }, [calendarEvents, scheduledTodayForStrip]);
+
+  const freeSlots = useMemo(
+    () => computeFreeSlots(dayStartIso, dayEndIso, stripBlockers, 15),
+    [dayStartIso, dayEndIso, stripBlockers],
+  );
+
   const [cheatsheetOpen, setCheatsheetOpen] = useState(false);
   const [editTitleTrigger, setEditTitleTrigger] = useState<number | null>(null);
   const [editDescTrigger, setEditDescTrigger] = useState<number | null>(null);
@@ -144,7 +217,7 @@ export function TasksView({
   const navOptions = useMemo(
     () => ({
       tasks,
-      groups,
+      groups: navGroups,
       collapsed: view.collapsed,
       selection: view.selection,
       onUpdateStatus,
@@ -162,7 +235,7 @@ export function TasksView({
     }),
     [
       tasks,
-      groups,
+      navGroups,
       view.collapsed,
       view.selection,
       onUpdateStatus,
@@ -297,7 +370,8 @@ export function TasksView({
   const hideSortGroup = view.tab === 'today' || view.tab === 'new';
 
   const listEmpty =
-    groups.length === 0 || groups.every((g) => g.tasks.length === 0);
+    view.tab !== 'today' &&
+    (groups.length === 0 || groups.every((g) => g.tasks.length === 0));
 
   return (
     <div className="tasks-view">
@@ -313,7 +387,7 @@ export function TasksView({
           notes={noteRefs}
           onCreate={handleCreateTask}
           onArrowDown={() => {
-            const ids = visibleRowIds(groups, view.collapsed);
+            const ids = visibleRowIds(navGroups, view.collapsed);
             if (ids.length) setFocusedId(ids[0]!);
           }}
         />
@@ -340,7 +414,13 @@ export function TasksView({
           />
         )}
       </div>
-      <div className="tasks-view__body">
+      <div
+        className={
+          view.tab === 'today'
+            ? 'tasks-view__body tasks-view__body--today'
+            : 'tasks-view__body'
+        }
+      >
         {(() => {
           const groupsRendered = groups.map((g) => (
             <TaskGroup
@@ -376,6 +456,46 @@ export function TasksView({
               >
                 {groupsRendered}
               </NewTabBody>
+            );
+          }
+
+          if (view.tab === 'today') {
+            return (
+              <div className="tasks-view__today-layout">
+                <div className="tasks-view__today-plate">
+                  <TodayPlate tasks={todayTabScopedTasks} now={now}>
+                    {(section, sectionTasks) =>
+                      sectionTasks.map((t) => (
+                        <TaskRow
+                          key={t.id}
+                          task={t}
+                          selected={view.selection.has(t.id)}
+                          focused={focusedId === t.id}
+                          onRowMouseDown={handleRowMouseDown}
+                          editTitleTrigger={editTitleTrigger}
+                          onConsumeTitleTrigger={() => setEditTitleTrigger(null)}
+                          editDescTrigger={editDescTrigger}
+                          onConsumeDescTrigger={() => setEditDescTrigger(null)}
+                          onUpdateStatus={onUpdateStatus}
+                          onNavigateToNote={onNavigateToNote}
+                          onUpdateTask={handleUpdateTask}
+                          onCreateTask={handleCreateTask}
+                          onDeleteTask={handleDeleteTask}
+                          notes={notes}
+                        />
+                      ))
+                    }
+                  </TodayPlate>
+                </div>
+                <TodayStrip
+                  now={now}
+                  events={calendarEvents}
+                  scheduledTasks={scheduledTodayForStrip}
+                  freeSlots={freeSlots}
+                  dayStart={dayStartIso}
+                  dayEnd={dayEndIso}
+                />
+              </div>
             );
           }
 

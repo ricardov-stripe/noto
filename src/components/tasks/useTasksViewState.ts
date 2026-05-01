@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useReducer, useRef } from 'react';
 import type { ViewState, StatusKey, PriorityKey, DueBucket, SortKey, GroupKey, Tab } from './taskFilters';
+import { preset } from './tabPresets';
 
 export type { Tab } from './taskFilters';
 
@@ -90,7 +91,18 @@ function reducer(state: ViewState, action: Action): ViewState {
 function loadInitial(): ViewState {
   try {
     const fromUrl = decodeView(window.location.hash);
-    if (Object.keys(fromUrl).length > 0) return { ...DEFAULT_VIEW, ...fromUrl, selection: new Set(), collapsed: DEFAULT_VIEW.collapsed };
+    if (Object.keys(fromUrl).length > 0) {
+      const base: ViewState = { ...DEFAULT_VIEW, ...fromUrl, selection: new Set(), collapsed: DEFAULT_VIEW.collapsed };
+      // If the URL specifies a tab but not the status/sort/group, apply the
+      // tab's preset so cold-loads into a tab get that tab's defaults.
+      if (fromUrl.tab) {
+        const p = preset(fromUrl.tab);
+        if (fromUrl.status == null) base.status = p.status;
+        if (fromUrl.sort == null) base.sort = p.sort;
+        if (fromUrl.group == null) base.group = p.group;
+      }
+      return base;
+    }
     const raw = window.localStorage.getItem(STORAGE_KEY);
     if (raw) {
       const parsed = JSON.parse(raw) as Partial<ViewState>;
@@ -128,7 +140,19 @@ export function useTasksViewState() {
     setNoteIds: useCallback((noteIds: (number | null)[]) => dispatch({ type: 'set', patch: { noteIds } }), []),
     setSort: useCallback((sort: SortKey) => dispatch({ type: 'set', patch: { sort } }), []),
     setGroup: useCallback((group: GroupKey) => dispatch({ type: 'set', patch: { group } }), []),
-    setTab: useCallback((tab: Tab) => dispatch({ type: 'set', patch: { tab, selection: new Set<number>() } }), []),
+    setTab: useCallback((tab: Tab) => {
+      const p = preset(tab);
+      dispatch({
+        type: 'set',
+        patch: {
+          tab,
+          status: p.status,
+          sort: p.sort,
+          group: p.group,
+          selection: new Set<number>(),
+        },
+      });
+    }, []),
     toggleCollapsed: useCallback((key: string) => dispatch({ type: 'toggle-collapsed', key }), []),
     select: useCallback((ids: number[], mode: 'replace' | 'add' | 'toggle' = 'replace') => dispatch({ type: 'select', ids, mode }), []),
     clearSelection: useCallback(() => dispatch({ type: 'clear-selection' }), []),

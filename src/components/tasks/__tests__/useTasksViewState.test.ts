@@ -102,6 +102,51 @@ describe('useTasksViewState — tab field', () => {
     expect(result.current.view.tab).toBe('new');
   });
 
+  it('setTab applies preset (status/sort/group) for the new tab', () => {
+    const { result } = renderHook(() => useTasksViewState());
+    act(() => { result.current.setTab('done'); });
+    expect(result.current.view.status).toEqual(['done']);
+    expect(result.current.view.sort).toBe('created-desc');
+    expect(result.current.view.group).toBe('week');
+  });
+
+  it('setTab preserves search and priority refinements', () => {
+    const { result } = renderHook(() => useTasksViewState());
+    act(() => {
+      result.current.setSearch('hello');
+      result.current.setPriority(['high']);
+    });
+    act(() => { result.current.setTab('upcoming'); });
+    expect(result.current.view.search).toBe('hello');
+    expect(result.current.view.priority).toEqual(['high']);
+    // But the preset still took over status/sort/group:
+    expect(result.current.view.sort).toBe('due-asc');
+    expect(result.current.view.group).toBe('due');
+  });
+
+  it('setTab clears selection', () => {
+    const { result } = renderHook(() => useTasksViewState());
+    act(() => { result.current.select([1, 2, 3]); });
+    expect(result.current.view.selection.size).toBe(3);
+    act(() => { result.current.setTab('all'); });
+    expect(result.current.view.selection.size).toBe(0);
+  });
+
+  it('cold load at #tasks/done applies done preset automatically', () => {
+    window.location.hash = '#tasks/done';
+    const { result } = renderHook(() => useTasksViewState());
+    expect(result.current.view.tab).toBe('done');
+    expect(result.current.view.status).toEqual(['done']);
+    expect(result.current.view.group).toBe('week');
+  });
+
+  it('cold load with explicit sort in URL overrides preset sort', () => {
+    window.location.hash = '#tasks/upcoming?sort=prio-desc';
+    const { result } = renderHook(() => useTasksViewState());
+    expect(result.current.view.tab).toBe('upcoming');
+    expect(result.current.view.sort).toBe('prio-desc');
+  });
+
   it('VALID_SORT now includes smart; decodeView accepts it', () => {
     expect(decodeView('#tasks?sort=smart').sort).toBe('smart');
   });

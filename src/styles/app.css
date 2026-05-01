@@ -1714,3 +1714,53 @@ input.note-title::placeholder { color: var(--text-soft); }
   left: 4px;
   color: var(--text-soft);
 }
+
+/* ==================== Tab strip (tasks view) ==================== */
+.tabstrip {
+  display: flex;
+  align-items: flex-end;
+  gap: 18px;
+  padding: 0 32px;
+  border-bottom: 1px solid var(--border-soft);
+  height: 38px;
+}
+.tabstrip__tab {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: none;
+  border: none;
+  padding: 8px 0;
+  color: var(--text-muted);
+  font-family: var(--font-ui, 'Geist', sans-serif);
+  font-weight: 500;
+  font-size: 13px;
+  line-height: 1;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  cursor: pointer;
+  border-bottom: 2px solid transparent;
+  margin-bottom: -1px;
+  transition: color 120ms ease, border-color 120ms ease;
+}
+.tabstrip__tab:hover { color: var(--text); }
+.tabstrip__tab:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+  border-radius: 2px;
+}
+.tabstrip__tab--active {
+  color: var(--text);
+  border-bottom-color: var(--accent);
+}
+.tabstrip__count {
+  font-family: var(--font-mono, 'Geist Mono', monospace);
+  font-weight: 500;
+  font-size: 10px;
+  line-height: 1;
+  color: var(--text-muted);
+}
+.tabstrip__count--accent { color: var(--accent); }
+@media (prefers-reduced-motion: reduce) {
+  .tabstrip__tab { transition: none; }
+}

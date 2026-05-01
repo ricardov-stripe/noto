@@ -1,6 +1,10 @@
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import { Database } from '../database';
 import fs from 'fs';
+import * as fsm from 'node:fs';
+import * as os from 'node:os';
+import * as path from 'node:path';
+import BetterSqlite3 from 'better-sqlite3';
 
 const TEST_DB = '/tmp/noto-test.db';
 
@@ -87,5 +91,69 @@ describe('Database', () => {
       db.createFolder({ name: 'Personal', parentId: null });
       expect(db.listFolders()).toHaveLength(2);
     });
+  });
+});
+
+function tmpDb(): string {
+  return path.join(os.tmpdir(), `noto-test-${Date.now()}-${Math.random().toString(16).slice(2)}.db`);
+}
+
+describe('Database migration: nullable sourceNoteId', () => {
+  let dbPath: string;
+
+  beforeEach(() => { dbPath = tmpDb(); });
+  afterEach(() => { try { fsm.unlinkSync(dbPath); } catch {} });
+
+  it('migrates an existing tasks table with NOT NULL sourceNoteId to nullable', () => {
+    const raw = new BetterSqlite3(dbPath);
+    raw.exec(`
+      CREATE TABLE notes (id INTEGER PRIMARY KEY AUTOINCREMENT, title TEXT NOT NULL, content TEXT NOT NULL DEFAULT '', folderId INTEGER, createdAt TEXT NOT NULL DEFAULT (datetime('now')), updatedAt TEXT NOT NULL DEFAULT (datetime('now')));
+      CREATE TABLE tasks (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        title TEXT NOT NULL,
+        description TEXT NOT NULL DEFAULT '',
+        priority TEXT NOT NULL CHECK(priority IN ('high','medium','low')),
+        status TEXT NOT NULL CHECK(status IN ('todo','in_progress','done')),
+        dueDate TEXT,
+        sourceNoteId INTEGER NOT NULL REFERENCES notes(id),
+        sourceText TEXT NOT NULL DEFAULT '',
+        createdAt TEXT NOT NULL DEFAULT (datetime('now')),
+        updatedAt TEXT NOT NULL DEFAULT (datetime('now'))
+      );
+    `);
+    raw.prepare('INSERT INTO notes (title) VALUES (?)').run('A note');
+    raw.prepare("INSERT INTO tasks (title, priority, status, sourceNoteId) VALUES (?, ?, ?, ?)")
+      .run('Existing', 'medium', 'todo', 1);
+    raw.close();
+
+    const db = new Database(dbPath);
+    const tasks = db.listTasks();
+    expect(tasks).toHaveLength(1);
+    expect(tasks[0].title).toBe('Existing');
+    expect(tasks[0].sourceNoteId).toBe(1);
+
+    const manual = db.createTask({
+      title: 'Manual task',
+      description: '',
+      priority: 'medium',
+      status: 'todo',
+      dueDate: null,
+      sourceNoteId: null,
+      sourceText: '',
+    });
+    expect(manual.sourceNoteId).toBeNull();
+    db.close();
+  });
+
+  it('is idempotent — running migration twice does not double-migrate or corrupt rows', () => {
+    const db1 = new Database(dbPath);
+    db1.close();
+    const db2 = new Database(dbPath);
+    const t = db2.createTask({
+      title: 'X', description: '', priority: 'low', status: 'todo',
+      dueDate: null, sourceNoteId: null, sourceText: '',
+    });
+    expect(t.sourceNoteId).toBeNull();
+    db2.close();
   });
 });

@@ -14,7 +14,7 @@ export interface Task {
   priority: 'high' | 'medium' | 'low';
   status: 'todo' | 'in_progress' | 'done';
   dueDate: string | null;
-  sourceNoteId: number;
+  sourceNoteId: number | null;
   sourceText: string;
   createdAt: string;
   updatedAt: string;

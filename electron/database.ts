@@ -1,3 +1,4 @@
+import * as fs from 'node:fs';
 import BetterSqlite3 from 'better-sqlite3';
 
 interface Note {
@@ -16,7 +17,7 @@ interface Task {
   priority: 'high' | 'medium' | 'low';
   status: 'todo' | 'in_progress' | 'done';
   dueDate: string | null;
-  sourceNoteId: number;
+  sourceNoteId: number | null;
   sourceText: string;
   createdAt: string;
   updatedAt: string;
@@ -34,6 +35,16 @@ export class Database {
   constructor(dbPath: string) {
     this.db = new BetterSqlite3(dbPath);
     this.db.pragma('journal_mode = WAL');
+    try {
+      const cols = this.db.prepare("PRAGMA table_info(tasks)").all() as Array<{ name: string; notnull: number }>;
+      const sourceCol = cols.find((c) => c.name === 'sourceNoteId');
+      if (sourceCol && sourceCol.notnull === 1 && fs.existsSync(dbPath)) {
+        const backup = `${dbPath}.bak.${Date.now()}`;
+        fs.copyFileSync(dbPath, backup);
+      }
+    } catch {
+      // best-effort backup; do not block migration
+    }
     this.migrate();
   }
 
@@ -59,12 +70,41 @@ export class Database {
         priority TEXT NOT NULL CHECK(priority IN ('high','medium','low')),
         status TEXT NOT NULL CHECK(status IN ('todo','in_progress','done')),
         dueDate TEXT,
-        sourceNoteId INTEGER NOT NULL REFERENCES notes(id),
+        sourceNoteId INTEGER REFERENCES notes(id),
         sourceText TEXT NOT NULL DEFAULT '',
         createdAt TEXT NOT NULL DEFAULT (datetime('now')),
         updatedAt TEXT NOT NULL DEFAULT (datetime('now'))
       );
     `);
+
+    // Migration: drop NOT NULL on tasks.sourceNoteId for manual tasks.
+    // SQLite cannot ALTER a column's nullability — rebuild the table if needed.
+    const cols = this.db.prepare('PRAGMA table_info(tasks)').all() as Array<{
+      name: string; notnull: number;
+    }>;
+    const sourceCol = cols.find((c) => c.name === 'sourceNoteId');
+    if (sourceCol && sourceCol.notnull === 1) {
+      this.db.exec(`
+        BEGIN;
+        CREATE TABLE tasks_new (
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          title TEXT NOT NULL,
+          description TEXT NOT NULL DEFAULT '',
+          priority TEXT NOT NULL CHECK(priority IN ('high','medium','low')),
+          status TEXT NOT NULL CHECK(status IN ('todo','in_progress','done')),
+          dueDate TEXT,
+          sourceNoteId INTEGER REFERENCES notes(id),
+          sourceText TEXT NOT NULL DEFAULT '',
+          createdAt TEXT NOT NULL DEFAULT (datetime('now')),
+          updatedAt TEXT NOT NULL DEFAULT (datetime('now'))
+        );
+        INSERT INTO tasks_new (id, title, description, priority, status, dueDate, sourceNoteId, sourceText, createdAt, updatedAt)
+          SELECT id, title, description, priority, status, dueDate, sourceNoteId, sourceText, createdAt, updatedAt FROM tasks;
+        DROP TABLE tasks;
+        ALTER TABLE tasks_new RENAME TO tasks;
+        COMMIT;
+      `);
+    }
   }
 
   createNote(data: { title: string; content: string; folderId: number | null }): Note {

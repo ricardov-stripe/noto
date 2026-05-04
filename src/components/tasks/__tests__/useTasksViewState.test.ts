@@ -185,3 +185,56 @@ describe('useTasksViewState — tab field', () => {
     expect(decodeView('#tasks?group=week').group).toBe('week');
   });
 });
+
+describe('useTasksViewState — viewMode', () => {
+  it('defaults to "list" on a fresh install', () => {
+    const { result } = renderHook(() => useTasksViewState());
+    expect(result.current.viewMode).toBe('list');
+  });
+
+  it('hydrates from localStorage', () => {
+    window.localStorage.setItem('noto:tasks:view-mode', 'board');
+    const { result } = renderHook(() => useTasksViewState());
+    expect(result.current.viewMode).toBe('board');
+  });
+
+  it('falls back to "list" for an invalid stored value', () => {
+    window.localStorage.setItem('noto:tasks:view-mode', 'mystery');
+    const { result } = renderHook(() => useTasksViewState());
+    expect(result.current.viewMode).toBe('list');
+  });
+
+  it('setViewMode persists the new value', () => {
+    const { result } = renderHook(() => useTasksViewState());
+    act(() => {
+      result.current.setViewMode('board');
+    });
+    expect(result.current.viewMode).toBe('board');
+    expect(window.localStorage.getItem('noto:tasks:view-mode')).toBe('board');
+  });
+
+  it('toggleViewMode flips between list and board', () => {
+    const { result } = renderHook(() => useTasksViewState());
+    expect(result.current.viewMode).toBe('list');
+    act(() => {
+      result.current.toggleViewMode();
+    });
+    expect(result.current.viewMode).toBe('board');
+    act(() => {
+      result.current.toggleViewMode();
+    });
+    expect(result.current.viewMode).toBe('list');
+  });
+
+  it('viewMode is independent of the filter ViewState (no schema migration needed)', () => {
+    // Set view-state but no view-mode — viewMode should still default to 'list'
+    // and the filter state should still hydrate correctly.
+    window.localStorage.setItem(
+      'noto:tasks:view-state',
+      JSON.stringify({ tab: 'done', sort: 'created-desc' }),
+    );
+    const { result } = renderHook(() => useTasksViewState());
+    expect(result.current.viewMode).toBe('list');
+    expect(result.current.view.tab).toBe('done');
+  });
+});

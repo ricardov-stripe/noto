@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { render, screen } from '@testing-library/react';
+import { DndContext } from '@dnd-kit/core';
 import { TodayStrip } from '../TodayStrip';
 import type { Task } from '../../../api';
 import type { CalendarEvent } from '../../../lib/calendar';
@@ -124,6 +125,70 @@ describe('TodayStrip', () => {
       />,
     );
     expect(container.querySelector('.today-strip__now')).toBeNull();
+  });
+
+  describe('dndKitMode', () => {
+    const slots: FreeSlot[] = [
+      {
+        start: new Date(2026, 4, 1, 11, 0, 0, 0).toISOString(),
+        end: new Date(2026, 4, 1, 12, 0, 0, 0).toISOString(),
+        durationMin: 60,
+      },
+    ];
+
+    it('renders slots with the dnd-kit data attribute when enabled', () => {
+      render(
+        <DndContext>
+          <TodayStrip
+            now={new Date(2026, 4, 1, 10, 0, 0, 0)}
+            events={[]}
+            scheduledTasks={[]}
+            freeSlots={slots}
+            dayStart={dayStart}
+            dayEnd={dayEnd}
+            dndKitMode
+          />
+        </DndContext>,
+      );
+      const node = document.querySelector('.today-strip__slot');
+      expect(node).not.toBeNull();
+      expect(node).toHaveAttribute('data-dnd-kit', 'true');
+    });
+
+    it('does not set the dnd-kit attribute when disabled (default)', () => {
+      render(
+        <TodayStrip
+          now={new Date(2026, 4, 1, 10, 0, 0, 0)}
+          events={[]}
+          scheduledTasks={[]}
+          freeSlots={slots}
+          dayStart={dayStart}
+          dayEnd={dayEnd}
+        />,
+      );
+      const node = document.querySelector('.today-strip__slot');
+      expect(node).not.toBeNull();
+      expect(node).not.toHaveAttribute('data-dnd-kit');
+    });
+
+    it('preserves slot start/end attributes in dnd-kit mode', () => {
+      render(
+        <DndContext>
+          <TodayStrip
+            now={new Date(2026, 4, 1, 10, 0, 0, 0)}
+            events={[]}
+            scheduledTasks={[]}
+            freeSlots={slots}
+            dayStart={dayStart}
+            dayEnd={dayEnd}
+            dndKitMode
+          />
+        </DndContext>,
+      );
+      const node = document.querySelector('.today-strip__slot');
+      expect(node).toHaveAttribute('data-slot-start', slots[0]!.start);
+      expect(node).toHaveAttribute('data-slot-end', slots[0]!.end);
+    });
   });
 
   it('clamps event starting before dayStart to top 0%', () => {

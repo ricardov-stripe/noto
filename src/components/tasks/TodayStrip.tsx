@@ -1,4 +1,5 @@
 import type React from 'react';
+import { useDroppable } from '@dnd-kit/core';
 import type { CalendarEvent } from '../../lib/calendar';
 import type { Task } from '../../api';
 import type { FreeSlot } from '../../lib/timeSlots';
@@ -60,6 +61,14 @@ export interface TodayStripProps {
   dayEnd: string;
   onSlotDrop?: (slotStart: string, slotEnd: string, taskId: number) => void;
   onEventClick?: (eventId: string) => void;
+  /**
+   * When true, free-slot drop targets register with dnd-kit (`useDroppable`
+   * id = `slot:${start}|${end}`) so they participate in the same DndContext
+   * as the Kanban board cards. When false (default), they use native HTML5
+   * drag-and-drop with the `application/x-noto-task` data type for backward
+   * compatibility with the legacy list-view TODAY tab.
+   */
+  dndKitMode?: boolean;
 }
 
 export function TodayStrip({
@@ -71,6 +80,7 @@ export function TodayStrip({
   dayEnd,
   onSlotDrop,
   onEventClick,
+  dndKitMode = false,
 }: TodayStripProps) {
   const w0 = new Date(dayStart).getTime();
   const w1 = new Date(dayEnd).getTime();
@@ -160,37 +170,23 @@ export function TodayStrip({
                 dayEnd,
               );
               if (heightPct <= 0) return null;
-              const handleDragOver = (e: React.DragEvent) => {
-                if (!onSlotDrop) return;
-                if (!Array.from(e.dataTransfer.types).includes('application/x-noto-task')) return;
-                e.preventDefault();
-                e.dataTransfer.dropEffect = 'move';
-                (e.currentTarget as HTMLElement).classList.add('today-strip__slot--active');
-              };
-              const handleDragLeave = (e: React.DragEvent) => {
-                (e.currentTarget as HTMLElement).classList.remove('today-strip__slot--active');
-              };
-              const handleDrop = (e: React.DragEvent) => {
-                (e.currentTarget as HTMLElement).classList.remove('today-strip__slot--active');
-                if (!onSlotDrop) return;
-                const raw = e.dataTransfer.getData('application/x-noto-task');
-                const id = Number.parseInt(raw, 10);
-                if (!Number.isFinite(id)) return;
-                e.preventDefault();
-                onSlotDrop(slot.start, slot.end, id);
-              };
+              if (dndKitMode) {
+                return (
+                  <DndKitFreeSlot
+                    key={slot.start}
+                    slot={slot}
+                    topPct={topPct}
+                    heightPct={heightPct}
+                  />
+                );
+              }
               return (
-                <div
+                <NativeFreeSlot
                   key={slot.start}
-                  className="today-strip__slot today-strip__slot--drop-target"
-                  style={{ top: `${topPct}%`, height: `${heightPct}%` }}
-                  data-slot-start={slot.start}
-                  data-slot-end={slot.end}
-                  data-drop-type="free-slot"
-                  aria-label={`Free ${slot.durationMin} minutes`}
-                  onDragOver={handleDragOver}
-                  onDragLeave={handleDragLeave}
-                  onDrop={handleDrop}
+                  slot={slot}
+                  topPct={topPct}
+                  heightPct={heightPct}
+                  onSlotDrop={onSlotDrop}
                 />
               );
             })}
@@ -209,5 +205,80 @@ export function TodayStrip({
         </div>
       </div>
     </aside>
+  );
+}
+
+interface FreeSlotChildProps {
+  slot: FreeSlot;
+  topPct: number;
+  heightPct: number;
+}
+
+function NativeFreeSlot({
+  slot,
+  topPct,
+  heightPct,
+  onSlotDrop,
+}: FreeSlotChildProps & {
+  onSlotDrop?: (slotStart: string, slotEnd: string, taskId: number) => void;
+}) {
+  const handleDragOver = (e: React.DragEvent) => {
+    if (!onSlotDrop) return;
+    if (!Array.from(e.dataTransfer.types).includes('application/x-noto-task')) return;
+    e.preventDefault();
+    e.dataTransfer.dropEffect = 'move';
+    (e.currentTarget as HTMLElement).classList.add('today-strip__slot--active');
+  };
+  const handleDragLeave = (e: React.DragEvent) => {
+    (e.currentTarget as HTMLElement).classList.remove('today-strip__slot--active');
+  };
+  const handleDrop = (e: React.DragEvent) => {
+    (e.currentTarget as HTMLElement).classList.remove('today-strip__slot--active');
+    if (!onSlotDrop) return;
+    const raw = e.dataTransfer.getData('application/x-noto-task');
+    const id = Number.parseInt(raw, 10);
+    if (!Number.isFinite(id)) return;
+    e.preventDefault();
+    onSlotDrop(slot.start, slot.end, id);
+  };
+  return (
+    <div
+      className="today-strip__slot today-strip__slot--drop-target"
+      style={{ top: `${topPct}%`, height: `${heightPct}%` }}
+      data-slot-start={slot.start}
+      data-slot-end={slot.end}
+      data-drop-type="free-slot"
+      aria-label={`Free ${slot.durationMin} minutes`}
+      onDragOver={handleDragOver}
+      onDragLeave={handleDragLeave}
+      onDrop={handleDrop}
+    />
+  );
+}
+
+function DndKitFreeSlot({ slot, topPct, heightPct }: FreeSlotChildProps) {
+  // Encode start|end into the droppable id so TaskBoard's resolveDrop can
+  // forward both halves to the existing onSlotDrop(start, end, taskId)
+  // signature without a separate lookup.
+  const id = `slot:${slot.start}|${slot.end}`;
+  const { setNodeRef, isOver } = useDroppable({ id });
+  const cls = [
+    'today-strip__slot',
+    'today-strip__slot--drop-target',
+    isOver && 'today-strip__slot--active',
+  ]
+    .filter(Boolean)
+    .join(' ');
+  return (
+    <div
+      ref={setNodeRef}
+      className={cls}
+      style={{ top: `${topPct}%`, height: `${heightPct}%` }}
+      data-slot-start={slot.start}
+      data-slot-end={slot.end}
+      data-drop-type="free-slot"
+      data-dnd-kit="true"
+      aria-label={`Free ${slot.durationMin} minutes`}
+    />
   );
 }

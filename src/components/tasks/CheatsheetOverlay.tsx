@@ -101,6 +101,18 @@ export function CheatsheetOverlay({ open, onClose }: Props) {
               ['↓', 'Move into list'],
             ]}
           />
+          <Col
+            title="Board view"
+            rows={[
+              ['Drag card', 'Move between columns'],
+              ['Drag → rail slot', 'Schedule at that time'],
+              ['Space', 'Pick up focused card'],
+              ['↑ / ↓ / ← / →', 'Move while picked up'],
+              ['Space / Enter', 'Drop'],
+              ['Esc', 'Cancel pickup'],
+              ['Header → List/Board', 'Switch view mode'],
+            ]}
+          />
         </div>
       </div>
     </div>

@@ -1,10 +1,18 @@
-import { useCallback, useEffect, useReducer, useRef } from 'react';
+import { useCallback, useEffect, useReducer, useRef, useState } from 'react';
 import type { ViewState, StatusKey, PriorityKey, DueBucket, SortKey, GroupKey, Tab } from './taskFilters';
 import { preset } from './tabPresets';
 
 export type { Tab } from './taskFilters';
 
+export type ViewMode = 'list' | 'board';
+
 const STORAGE_KEY = 'noto:tasks:view-state';
+// Independent key for the layout choice. Keeping it separate from the filter
+// state means we never need a schema migration for the existing JSON blob,
+// and PR2 (where this becomes the only mode) can delete the key entirely.
+const VIEW_MODE_STORAGE_KEY = 'noto:tasks:view-mode';
+const VIEW_MODE_DEFAULT: ViewMode = 'list';
+const VALID_VIEW_MODE: ViewMode[] = ['list', 'board'];
 
 const VALID_TAB: Tab[] = ['new', 'today', 'upcoming', 'all', 'done'];
 const VALID_SORT: SortKey[] = ['due-asc', 'due-desc', 'prio-asc', 'prio-desc', 'created-asc', 'created-desc', 'title-asc', 'smart'];
@@ -130,11 +138,40 @@ function loadInitial(): { view: ViewState; tabSource: TabSource } {
   };
 }
 
+function loadInitialViewMode(): ViewMode {
+  try {
+    const raw = window.localStorage.getItem(VIEW_MODE_STORAGE_KEY);
+    if (raw && VALID_VIEW_MODE.includes(raw as ViewMode)) {
+      return raw as ViewMode;
+    }
+  } catch {
+    /* localStorage unavailable — fall through to default. */
+  }
+  return VIEW_MODE_DEFAULT;
+}
+
 export function useTasksViewState() {
   const initial = useRef(loadInitial()).current;
   const [view, dispatch] = useReducer(reducer, initial.view);
+  const [viewMode, setViewModeState] = useState<ViewMode>(loadInitialViewMode);
   const urlTimer = useRef<number | null>(null);
   const initialTabSource: TabSource = initial.tabSource;
+
+  useEffect(() => {
+    try {
+      window.localStorage.setItem(VIEW_MODE_STORAGE_KEY, viewMode);
+    } catch {
+      /* noop */
+    }
+  }, [viewMode]);
+
+  const setViewMode = useCallback((next: ViewMode) => {
+    setViewModeState(next);
+  }, []);
+
+  const toggleViewMode = useCallback(() => {
+    setViewModeState((m) => (m === 'list' ? 'board' : 'list'));
+  }, []);
 
   useEffect(() => {
     const persisted = { ...view, selection: undefined };
@@ -154,6 +191,9 @@ export function useTasksViewState() {
   return {
     view,
     initialTabSource,
+    viewMode,
+    setViewMode,
+    toggleViewMode,
     setSearch: useCallback((s: string) => dispatch({ type: 'set', patch: { search: s } }), []),
     setStatus: useCallback((status: StatusKey[]) => dispatch({ type: 'set', patch: { status } }), []),
     setPriority: useCallback((priority: PriorityKey[]) => dispatch({ type: 'set', patch: { priority } }), []),

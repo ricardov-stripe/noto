@@ -2339,3 +2339,362 @@ input.note-title::placeholder { color: var(--text-soft); }
   color: inherit;
   cursor: pointer;
 }
+/* ============================================================
+ * Tasks · Kanban board (Variant C — feature-flagged in PR1)
+ *
+ * 3-column board on the left, pinned 320px Today rail on the right.
+ * Layout grid is owned by .task-board-layout. Columns themselves are
+ * surface-alt boxes with rounded chrome; cards are flat surfaces with
+ * a colored top-bar for priority.
+ *
+ * Active when .tasks-view has the .tasks-view--board modifier. Existing
+ * .tasks-view--list (and unmodified .tasks-view) keep the legacy layout.
+ * ============================================================ */
+
+/* Header right-side cluster (toggle + meta) */
+.tasks-view__head-right {
+  display: flex;
+  align-items: center;
+  gap: var(--s-md);
+}
+
+.tasks-view__view-toggle {
+  display: inline-flex;
+  background: var(--surface-alt);
+  border-radius: var(--radius-pill);
+  padding: 2px;
+  gap: 2px;
+}
+.tasks-view__view-toggle-btn {
+  appearance: none;
+  background: transparent;
+  border: 0;
+  padding: 4px 12px;
+  border-radius: var(--radius-pill);
+  font-family: var(--font-chrome-mono);
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--text-muted);
+  cursor: pointer;
+  transition: background var(--motion-fast), color var(--motion-fast);
+}
+.tasks-view__view-toggle-btn:hover {
+  color: var(--text);
+}
+.tasks-view__view-toggle-btn--active {
+  background: var(--surface);
+  color: var(--text);
+  box-shadow: 0 1px 2px rgba(31, 27, 22, 0.06);
+}
+
+/* Board body grid: 1fr columns + 320px rail */
+.tasks-view__body--board {
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+  padding: 16px 32px 32px;
+}
+.task-board-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 320px;
+  gap: var(--s-md);
+  height: 100%;
+  min-height: 0;
+}
+.task-board {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(220px, 1fr));
+  gap: var(--s-md);
+  min-height: 0;
+  min-width: 0;
+}
+.task-board-rail {
+  min-height: 0;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+}
+.task-board-rail .today-strip {
+  flex: 1;
+  min-height: 0;
+}
+
+/* Below 1024px, drop the rail under the board so columns keep room. */
+@media (max-width: 1024px) {
+  .task-board-layout {
+    grid-template-columns: 1fr;
+    grid-template-rows: 1fr 280px;
+  }
+  .task-board-rail .today-strip {
+    max-height: 280px;
+  }
+}
+
+/* Column */
+.task-column {
+  background: var(--surface-alt);
+  border-radius: var(--radius-lg);
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  min-width: 0;
+  transition: background var(--motion-fast);
+}
+.task-column--over {
+  background: var(--accent-soft);
+}
+.task-column--disabled .task-column__body {
+  opacity: 0.85;
+}
+.task-column__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 12px 8px;
+  flex-shrink: 0;
+}
+.task-column__label {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--s-sm);
+  font-family: var(--font-chrome-mono);
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  color: var(--text-muted);
+  font-weight: 500;
+}
+.task-column__dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--text-soft);
+}
+.task-column__dot--accent { background: var(--accent); }
+.task-column__dot--warning { background: var(--warning); }
+.task-column__dot--success { background: var(--success); }
+.task-column__count {
+  background: var(--surface);
+  color: var(--text-muted);
+  font-family: var(--font-chrome-mono);
+  font-size: 10px;
+  padding: 1px 6px;
+  border-radius: var(--radius-pill);
+  border: 1px solid var(--border);
+  margin-left: var(--s-xs);
+}
+.task-column__add-btn {
+  appearance: none;
+  background: transparent;
+  border: 0;
+  width: 22px;
+  height: 22px;
+  display: grid;
+  place-items: center;
+  border-radius: var(--radius-sm);
+  color: var(--text-muted);
+  cursor: pointer;
+  font-size: 16px;
+  line-height: 1;
+}
+.task-column__add-btn:hover {
+  background: var(--surface);
+  color: var(--text);
+}
+.task-column__body {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  padding: 0 8px 8px;
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-sm);
+}
+.task-column__drop-hint {
+  padding: 12px;
+  border: 1px dashed var(--border);
+  border-radius: var(--radius-md);
+  text-align: center;
+  font-family: var(--font-chrome-mono);
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--text-soft);
+  margin-top: var(--s-xs);
+}
+.task-column__drop-hint--active {
+  border-color: var(--accent);
+  background: var(--accent-soft);
+  color: var(--accent-ink);
+  border-style: solid;
+}
+
+/* Card */
+.task-card {
+  background: var(--surface);
+  border-radius: var(--radius-md);
+  box-shadow: 0 1px 0 rgba(31, 27, 22, 0.04), 0 1px 3px rgba(31, 27, 22, 0.06);
+  position: relative;
+  overflow: hidden;
+  cursor: grab;
+  transition: box-shadow var(--motion-fast), transform var(--motion-fast);
+}
+.task-card:hover {
+  box-shadow: 0 1px 0 rgba(31, 27, 22, 0.06), 0 4px 10px rgba(31, 27, 22, 0.08);
+  transform: translateY(-1px);
+}
+.task-card--dragging {
+  cursor: grabbing;
+  box-shadow: 0 6px 18px rgba(31, 27, 22, 0.18);
+  transform: rotate(1.5deg);
+}
+.task-card__pri {
+  height: 3px;
+  width: 100%;
+  background: var(--text-soft);
+}
+.task-card--prio-high .task-card__pri { background: var(--accent); }
+.task-card--prio-medium .task-card__pri { background: var(--warning); }
+.task-card--prio-low .task-card__pri { background: var(--text-soft); }
+
+.task-card__check {
+  appearance: none;
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  width: 18px;
+  height: 18px;
+  border-radius: var(--radius-pill);
+  border: 1.5px solid var(--border);
+  background: var(--surface);
+  cursor: pointer;
+  opacity: 0;
+  display: grid;
+  place-items: center;
+  color: var(--bg);
+  transition: opacity var(--motion-fast), background var(--motion-fast),
+    border-color var(--motion-fast);
+  z-index: 1;
+}
+.task-card:hover .task-card__check { opacity: 1; }
+.task-card__check:hover {
+  border-color: var(--accent);
+  background: var(--accent-soft);
+  color: var(--accent-ink);
+}
+.task-card--done .task-card__check {
+  opacity: 1;
+  background: var(--success);
+  border-color: var(--success);
+  color: var(--bg);
+}
+.task-card--done .task-card__check svg {
+  width: 10px;
+  height: 10px;
+}
+
+.task-card__body {
+  padding: 10px 12px 10px;
+}
+.task-card__title {
+  font-family: var(--font-ui);
+  font-weight: 500;
+  font-size: 13px;
+  line-height: 1.4;
+  color: var(--text);
+  margin-bottom: 6px;
+  word-break: break-word;
+  padding-right: 22px; /* clear the check button */
+}
+.task-card__title--input {
+  width: 100%;
+  appearance: none;
+  background: var(--surface);
+  border: 1px solid var(--accent);
+  border-radius: var(--radius-sm);
+  padding: 4px 6px;
+  font-family: var(--font-ui);
+  font-weight: 500;
+  font-size: 13px;
+  color: var(--text);
+  outline: none;
+}
+.task-card__title-empty {
+  color: var(--text-soft);
+  font-style: italic;
+}
+.task-card--done .task-card__title {
+  color: var(--text-soft);
+  text-decoration: line-through;
+}
+.task-card--overdue .task-card__title {
+  color: var(--text);
+}
+
+.task-card__meta {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+  font-family: var(--font-chrome-mono);
+  font-size: 10px;
+  letter-spacing: 0.04em;
+  color: var(--text-soft);
+}
+.task-card__prio-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  background: transparent;
+  border: 0;
+  padding: 2px 4px;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  color: var(--text-muted);
+  font-family: var(--font-chrome-mono);
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+.task-card__prio-chip:hover {
+  background: var(--surface-alt);
+  color: var(--text);
+}
+.task-card__prio-label {
+  font-size: 9px;
+}
+.task-card__spacer { flex: 1; }
+.task-card__overflow {
+  appearance: none;
+  background: transparent;
+  border: 0;
+  padding: 2px 6px;
+  border-radius: var(--radius-sm);
+  color: var(--text-soft);
+  cursor: pointer;
+  font-size: 14px;
+  line-height: 1;
+}
+.task-card__overflow:hover {
+  background: var(--surface-alt);
+  color: var(--text);
+}
+.task-card__desc-input {
+  margin-top: 8px;
+  width: 100%;
+  min-height: 60px;
+  background: var(--surface-alt);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 6px 8px;
+  font-family: var(--font-ui);
+  font-size: 12px;
+  color: var(--text);
+  resize: vertical;
+}
+
+.task-card--selected {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}

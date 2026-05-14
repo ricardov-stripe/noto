@@ -30,6 +30,8 @@ import { TodayPlate, partitionPlateSections, localDateYmd } from './TodayPlate';
 import { TodayStrip } from './TodayStrip';
 import { TaskRow } from './TaskRow';
 import { dueBucket } from './taskFilters';
+import { TaskBoard } from './TaskBoard';
+import type { BoardColumnKey } from './boardPartition';
 
 /** Props for the tasks view: full task/note state plus status and refresh callbacks. */
 export interface TasksViewProps {
@@ -50,6 +52,8 @@ export function TasksView({
   const {
     view,
     initialTabSource,
+    viewMode,
+    setViewMode,
     setSearch,
     setStatus,
     setPriority,
@@ -422,6 +426,50 @@ export function TasksView({
     [tasks, refresh],
   );
 
+  /**
+   * Cross-column drop on the Kanban board. Resolves the visible source column
+   * from the task's current state, then applies the right mutation:
+   *   - target=upcoming + source was NEW (untriaged, no dueDate): set dueDate
+   *     to tomorrow 9am as a sensible default. The user can edit via the
+   *     due-pill popover. Status stays 'todo'. (Auto-set is presumptuous but
+   *     the alternative is a 2-step drag → popover open which kills the flow.
+   *     The plan calls this out as a deliberate trade-off.)
+   *   - target=upcoming + source was DONE: reopen by setting status='todo'.
+   *     Leave dueDate untouched.
+   *   - target=done: set status='done'. Leave dueDate untouched.
+   *   - target=new: dispatcher rejects this (NEW is exit-only because
+   *     isUntriaged is one-way), so handleColumnDrop should never see it.
+   *
+   * Mirrors handleSlotDrop's no-optimistic pattern: server then refresh. The
+   * ~50ms server round-trip is below noticeable delay for a desktop app and
+   * avoids coupling TasksView to the parent's setTasks setter.
+   */
+  const handleColumnDrop = useCallback(
+    async (taskId: number, target: BoardColumnKey) => {
+      const task = tasks.find((t) => t.id === taskId);
+      if (!task || target === 'new') return;
+
+      const wasUntriaged = isUntriaged(task);
+      const patch: Partial<Pick<Task, 'status' | 'dueDate'>> = {};
+
+      if (target === 'upcoming') {
+        patch.status = 'todo';
+        if (wasUntriaged && task.dueDate == null) {
+          patch.dueDate = tomorrowAt9amIso();
+        }
+      } else if (target === 'done') {
+        patch.status = 'done';
+      }
+
+      try {
+        await api.tasks.update(taskId, patch);
+      } finally {
+        await refresh();
+      }
+    },
+    [tasks, refresh],
+  );
+
   const handleScheduleUndo = useCallback(async () => {
     if (!scheduleUndo) return;
     const { taskId, previousDueDate } = scheduleUndo;
@@ -438,34 +486,71 @@ export function TasksView({
     (groups.length === 0 || groups.every((g) => g.tasks.length === 0));
 
   return (
-    <div className="tasks-view">
+    <div className={`tasks-view tasks-view--${viewMode}`}>
       <header className="tasks-view__header">
         <h1 className="tasks-view__title">Tasks</h1>
-        <div className="tasks-view__meta">
-          {counts.all} OPEN · {counts.done} DONE
+        <div className="tasks-view__head-right">
+          <div
+            className="tasks-view__view-toggle"
+            role="group"
+            aria-label="View mode"
+          >
+            <button
+              type="button"
+              className={
+                viewMode === 'list'
+                  ? 'tasks-view__view-toggle-btn tasks-view__view-toggle-btn--active'
+                  : 'tasks-view__view-toggle-btn'
+              }
+              aria-pressed={viewMode === 'list'}
+              onClick={() => setViewMode('list')}
+            >
+              List
+            </button>
+            <button
+              type="button"
+              className={
+                viewMode === 'board'
+                  ? 'tasks-view__view-toggle-btn tasks-view__view-toggle-btn--active'
+                  : 'tasks-view__view-toggle-btn'
+              }
+              aria-pressed={viewMode === 'board'}
+              onClick={() => setViewMode('board')}
+            >
+              Board
+            </button>
+          </div>
+          <div className="tasks-view__meta">
+            {counts.all} OPEN · {counts.done} DONE
+          </div>
         </div>
       </header>
-      <TabStrip active={view.tab} counts={counts} onChange={setTab} />
+      {viewMode === 'list' && (
+        <TabStrip active={view.tab} counts={counts} onChange={setTab} />
+      )}
       <div className="tasks-view__pad">
         <QuickAddBar
           notes={noteRefs}
           onCreate={handleCreateTask}
           onArrowDown={() => {
+            if (viewMode !== 'list') return;
             const ids = visibleRowIds(navGroups, view.collapsed);
             if (ids.length) setFocusedId(ids[0]!);
           }}
         />
-        <ControlBar
-          view={view}
-          setSearch={setSearch}
-          setStatus={setStatus}
-          setPriority={setPriority}
-          setDue={setDue}
-          setSort={setSort}
-          setGroup={setGroup}
-          hideSortGroup={hideSortGroup}
-        />
-        {view.selection.size > 0 && (
+        {viewMode === 'list' && (
+          <ControlBar
+            view={view}
+            setSearch={setSearch}
+            setStatus={setStatus}
+            setPriority={setPriority}
+            setDue={setDue}
+            setSort={setSort}
+            setGroup={setGroup}
+            hideSortGroup={hideSortGroup}
+          />
+        )}
+        {viewMode === 'list' && view.selection.size > 0 && (
           <BulkActionBar
             count={view.selection.size}
             allDone={bulkAllDone}
@@ -478,6 +563,36 @@ export function TasksView({
           />
         )}
       </div>
+
+      {viewMode === 'board' && (
+        <div className="tasks-view__body tasks-view__body--board">
+          <TaskBoard
+            tasks={tasks}
+            notes={notes}
+            onColumnDrop={(taskId, target) => void handleColumnDrop(taskId, target)}
+            onSlotDrop={(start, end, taskId) =>
+              void handleSlotDrop(start, end, taskId)
+            }
+            onUpdateStatus={onUpdateStatus}
+            onUpdateTask={handleUpdateTask}
+            onDeleteTask={handleDeleteTask}
+            onCreateTask={handleCreateTask}
+            onNavigateToNote={onNavigateToNote}
+            rail={
+              <TodayStrip
+                now={now}
+                events={calendarEvents}
+                scheduledTasks={scheduledTodayForStrip}
+                freeSlots={freeSlots}
+                dayStart={dayStartIso}
+                dayEnd={dayEndIso}
+                dndKitMode
+              />
+            }
+          />
+        </div>
+      )}
+      {viewMode === 'list' && (
       <div
         className={
           view.tab === 'today'
@@ -586,6 +701,7 @@ export function TasksView({
           );
         })()}
       </div>
+      )}
       <CheatsheetOverlay
         open={cheatsheetOpen}
         onClose={() => setCheatsheetOpen(false)}
@@ -625,4 +741,16 @@ function formatSlotTime(iso: string): string {
   } catch {
     return iso;
   }
+}
+
+/**
+ * Default due date when the user drags an untriaged card from NEW to UPCOMING.
+ * Tomorrow at 9am local time, in ISO. Chosen as a sensible "soonish but not
+ * urgent" default; the user can always edit via the due-pill popover.
+ */
+function tomorrowAt9amIso(): string {
+  const d = new Date();
+  d.setDate(d.getDate() + 1);
+  d.setHours(9, 0, 0, 0);
+  return d.toISOString();
 }

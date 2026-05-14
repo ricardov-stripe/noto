@@ -121,7 +121,7 @@ function hasTime(dueDate: string): boolean {
   return dueDate.length > 10;
 }
 
-function smartCompare(a: Task, b: Task): number {
+export function smartCompare(a: Task, b: Task): number {
   const ra = smartRank(a);
   const rb = smartRank(b);
   if (ra !== rb) return ra - rb;
